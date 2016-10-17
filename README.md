@@ -41,7 +41,7 @@ The LSST software built this way will is meant to be deployed via CernVM-FS unde
 bash runContainer.sh  -d /my/deploy/top/dir  -t v12_1
 ```
 
-**4) Build a augmented version of LSST framework:** You can also build an official LSST distribution and include additional packages via the `-p` option. For instance, to build version `v12_1` and also include packages `tmv` , `galsim` and `meas_extensions_shapeHSM` do:
+**4) Build an extended version of LSST framework:** You can also build an official LSST distribution and include additional packages via the `-p` option. For instance, to build version `v12_1` and also include packages `tmv` , `galsim` and `meas_extensions_shapeHSM` do:
 
 ```
 bash runContainer.sh  -p tmv,galsim,meas_extensions_shapeHSM  -t v12_1 
