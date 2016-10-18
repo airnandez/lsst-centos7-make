@@ -50,7 +50,7 @@
 # usage()
 #
 usage () { 
-	echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-p <products>]-t <tag>"
+    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-p <products>]-t <tag>"
 } 
 
 #
@@ -73,28 +73,28 @@ interactive=false
 #
 while getopts d:t:v:ip: optflag; do
     case $optflag in
-    	d)
-			targetDir=$OPTARG
-			;;
-    	t)
-			tag=$OPTARG
-			;;
-    	v)
-			hostVolume=$OPTARG
-			;;
-		i)  
+        d)
+            targetDir=$OPTARG
+            ;;
+        t)
+            tag=$OPTARG
+            ;;
+        v)
+            hostVolume=$OPTARG
+            ;;
+        i)  
             interactive=true
-		    ;;
-    	p)
-			optProducts=$OPTARG
-			;;
+            ;;
+        p)
+            optProducts=$OPTARG
+            ;;
     esac
 done
 shift $((OPTIND - 1))
 
 if [ -z "${tag}" ]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 # Path of the in-container volume: we use the first component of the target
@@ -105,18 +105,18 @@ containerVolume=`echo ${targetDir} | awk '{split($0,a,"/"); printf "/%s", a[2]}'
 # Does the host volume actually exist?
 df ${hostVolume} > /dev/null 2>&1
 if [ $? != 0 ]; then
-	echo "${thisScript}: ${hostVolume} does not exist"
-	exit 1
+    echo "${thisScript}: ${hostVolume} does not exist"
+    exit 1
 fi
 
 if [ "${interactive}" == true ]; then
-	mode="-it"
-	cmd="/bin/bash"
+    mode="-it"
+    cmd="/bin/bash"
 else
-	productsFlag=${optProducts:+"-p ${optProducts}"}
-	mode="-d"
-	cmd="/bin/bash makeStack.sh -d ${targetDir} ${productsFlag} -t ${tag}"
-fi	
+    productsFlag=${optProducts:+"-p ${optProducts}"}
+    mode="-d"
+    cmd="/bin/bash makeStack.sh -d ${targetDir} ${productsFlag} -t ${tag}"
+fi  
 
 # Run the container
 imageName="airnandez/lsst-centos7-make"
@@ -125,7 +125,4 @@ docker run --name ${containerName}-${tag}              \
            --volume ${hostVolume}:${containerVolume}   \
            ${mode}                                     \
            ${imageName}                                \
-           ${cmd}
-
-
-
+           ${cmd}s

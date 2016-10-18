@@ -59,7 +59,7 @@ products="lsst_apps"
 # usage()
 #
 usage () { 
-	echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-p <products>] -t <tag>"
+    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-p <products>] -t <tag>"
 } 
 
 #
@@ -67,41 +67,41 @@ usage () {
 #
 while getopts d:t:u:p: optflag; do
     case $optflag in
-    	d)
-			topDir=$OPTARG
-			;;
-    	t)
-			tag=$OPTARG
-			;;
-    	u)
-			user=$OPTARG
-			;;
-    	p)
-			optProducts=${OPTARG//,/ }
-			;;
+        d)
+            topDir=$OPTARG
+            ;;
+        t)
+            tag=$OPTARG
+            ;;
+        u)
+            user=$OPTARG
+            ;;
+        p)
+            optProducts=${OPTARG//,/ }
+            ;;
     esac
 done
 shift $((OPTIND - 1))
 
 if [ -z "${tag}" ]; then
-	usage
-	exit 0
+    usage
+    exit 0
 fi
 
 #
 # Is the provided tag a stable version or a weekly version?
 #
 if [[ ${tag} =~ v[0-9]+_[0-9]+.* ]]; then
-	# Stable version tag of the form 'v12_1'
-	# The suffix will be of the form 'v12.1'
-	suffix=${tag//_/.}
+    # Stable version tag of the form 'v12_1'
+    # The suffix will be of the form 'v12.1'
+    suffix=${tag//_/.}
 elif [[ ${tag} =~ w_[0-9]{4}_[0-9]{2} ]]; then
-	# Weekly version tag of the form 'w_2016_15'
-	# The suffix will be identical to the weekly tag
-	suffix=${tag}
+    # Weekly version tag of the form 'w_2016_15'
+    # The suffix will be identical to the weekly tag
+    suffix=${tag}
 else
-	echo "${thisScript}: '${tag}' is not a recognized version tag"
-	exit 1
+    echo "${thisScript}: '${tag}' is not a recognized version tag"
+    exit 1
 fi
 
 #
@@ -111,8 +111,8 @@ fi
 url="https://raw.githubusercontent.com/lsst/lsst/master/scripts/newinstall.sh"
 status=`curl -s --head  ${url} | head -n 1`
 if [[ ${status} != HTTP*200* ]]; then
-	echo "${thisScript}: download installer could not be found at ${url}"
-	exit 1
+    echo "${thisScript}: download installer could not be found at ${url}"
+    exit 1
 fi
 buildDir=${topDir}/"lsst-"${suffix}
 rm -rf ${buildDir}
@@ -130,8 +130,8 @@ export TMPDIR=`mktemp -d --tmpdir=${scratchDir} lsst-${suffix}-build-XXXXXXXXXX`
 log="${scratchDir}/lsst-${suffix}-install.log"
 PYTHON="/usr/bin/python" bash newinstall.sh -b > ${log} 2>&1
 if [ ! -f "loadLSST.bash" ]; then
-	echo "${thisScript}: file 'loadLSST.bash' not found"
-	exit 1
+    echo "${thisScript}: file 'loadLSST.bash' not found"
+    exit 1
 fi
 
 #
@@ -139,11 +139,11 @@ fi
 #
 source loadLSST.bash
 for p in ${products} ${optProducts}; do
-	eups distrib install -t ${tag} ${p}  >>  ${log} 2>&1
-	if [ $? != 0 ]; then
-		echo "${thisScript}: eups distrib install -t ${tag} ${p} failed"
-		exit 1
-	fi
+    eups distrib install -t ${tag} ${p}  >>  ${log} 2>&1
+    if [ $? != 0 ]; then
+        echo "${thisScript}: eups distrib install -t ${tag} ${p} failed"
+        exit 1
+    fi
 done
 
 
