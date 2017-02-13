@@ -50,7 +50,7 @@
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-p <products>]-t <tag>"
+    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-p <products>] -t <tag>"
 } 
 
 #
@@ -59,7 +59,8 @@ usage () {
 thisScript=`basename $0`
 
 # Directory in the host to be used by the container to build the software on
-hostVolume="/scratch"
+hostVolume="/dev/shm/`whoami`"
+mkdir -p ${hostVolume}
 
 # Target directory to build the software in (in container namespace)
 os=`uname -s | tr [:upper:] [:lower:]`
@@ -74,25 +75,25 @@ interactive=false
 while getopts d:t:v:ip: optflag; do
     case $optflag in
         d)
-            targetDir=$OPTARG
+            targetDir=${OPTARG}
             ;;
         t)
-            tag=$OPTARG
+            tag=${OPTARG}
             ;;
         v)
-            hostVolume=$OPTARG
+            hostVolume=${OPTARG}
             ;;
         i)  
             interactive=true
             ;;
         p)
-            optProducts=$OPTARG
+            optProducts=${OPTARG}
             ;;
     esac
 done
 shift $((OPTIND - 1))
 
-if [ -z "${tag}" ]; then
+if [[ -z "${tag}" ]]; then
     usage
     exit 0
 fi
@@ -125,4 +126,4 @@ docker run --name ${containerName}-${tag}              \
            --volume ${hostVolume}:${containerVolume}   \
            ${mode}                                     \
            ${imageName}                                \
-           ${cmd}s
+           ${cmd}

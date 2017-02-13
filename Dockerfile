@@ -1,9 +1,10 @@
 FROM centos:centos7
 
-MAINTAINER Fabio Hernandez <fabio@in2p3.fr>
-LABEL purpose="Base image for building the LSST software framework for \
-distribution via CernVM-FS" \
-keywords="CernVM-FS,cvmfs,lsst,binary distribution"
+LABEL maintainer="Fabio Hernandez <fabio@in2p3.fr>" \
+	  keywords="CernVM-FS,cvmfs,lsst,binary distribution" \
+      purpose="Base image for building the LSST software framework for \
+distribution via CernVM-FS and for local installation"
+      
 
 #
 # Install pre-requisites for building the stack
@@ -19,12 +20,12 @@ RUN yum install -q -y bison curl blas bzip2-devel bzip2 flex fontconfig \
 # Create non-privileged user
 #
 ENV username="lsstsw"
-RUN useradd --create-home --user-group --home-dir /home/${username} ${username}
+RUN useradd --create-home --uid 361 --user-group --home-dir /home/${username} ${username}
 
 #
 # Add build script
 #
 WORKDIR /home/${username}
-ADD ["makeStack.sh", "."]
+ADD ["makeStack.sh", "buildStack.sh", "./"]
 
 CMD /bin/bash
