@@ -17,6 +17,11 @@ RUN yum install -q -y bison curl blas bzip2-devel bzip2 flex fontconfig \
     java-1.8.0-openjdk gettext perl-ExtUtils-MakeMaker
 
 #
+# Install additional packages useful for the build system
+#
+RUN yum install -q -y redhat-lsb
+
+#
 # Create non-privileged user
 #
 ENV username="lsstsw"
