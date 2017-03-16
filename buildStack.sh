@@ -10,12 +10,10 @@
 #    via CernVM-FS or on a local directory.                                   #
 #                                                                             #
 # Usage:                                                                      #
-#    buildStack.sh [-l <log file>]  -p products -b <build directory>          #
-#                   -a <archive directory>  -t <tag>                          #                                                 #
+#    buildStack.sh -p products -b <build directory>  -a <archive directory>   #
+#                  -t <tag>                                                   #                                                 #
 #                                                                             #
 #    where:                                                                   #
-#        <log file> is the absolute path of the build log file                #
-#                                                                             #
 #        <products> is the comma-separated list of EUPS products to be        #
 #            installed in addition, e.g. "lsst_distrib".
 #                                                                             #
@@ -42,22 +40,26 @@ user=`whoami`
 os=`uname -s | tr [:upper:] [:lower:]`
 TMPDIR=${TMPDIR:-/tmp}
 
+#
+# Routines
+#
+trace() {
+    timestamp=`date +"%Y-%m-%d %H:%M:%S"`
+    echo -e $timestamp $*
+}
 
-#
-# usage()
-#
 usage () { 
-    echo "Usage: ${thisScript} [-l <log file>]  -p products -b <build directory> -a <archive directory>  -t <tag>"
-} 
+    echo "Usage: ${thisScript} -p products -b <build directory> -a <archive directory>  -t <tag>"
+}
+
+# Start execution
+trace "$0" "$*"
 
 #
 # Parse and verify command line arguments
 #
-while getopts l:p:b:a:t: optflag; do
+while getopts p:b:a:t: optflag; do
     case $optflag in
-        l)
-            logFile=${OPTARG}
-            ;;
         p)
             products=${OPTARG//,/ }
             ;;
@@ -113,9 +115,6 @@ else
     exit 1
 fi
 
-if [[ -z "${logFile}" ]]; then
-    logFile=${TMPDIR}/${tag}.log
-fi
 
 #
 # Download the bootstrap installer from the canonical repository
@@ -127,7 +126,9 @@ if [[ ${status} != HTTP*200* ]]; then
     exit 1
 fi
 cd ${buildDir}
-curl -s -L -o newinstall.sh ${url}
+cmd="curl -s -L -o newinstall.sh ${url}"
+trace "working directory" `pwd`
+trace $cmd ; $cmd
 
 #
 # Bootstrap the installation. After executing the bootstrap script, there must
@@ -135,7 +136,8 @@ curl -s -L -o newinstall.sh ${url}
 #
 export TMPDIR=`mktemp -d --tmpdir=${TMPDIR} ${suffix}-build-XXXXXXXXXX`
 
-PYTHON="/usr/bin/python" bash newinstall.sh -b > ${logFile}  2>&1
+cmd="bash newinstall.sh -P /usr/bin/python -b"
+trace $cmd ; $cmd
 if [ ! -f "loadLSST.bash" ]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
     exit 1
@@ -146,9 +148,10 @@ fi
 #
 source loadLSST.bash
 for p in ${products}; do
-    eups distrib install -t ${tag} ${p}  >> ${logFile}  2>&1
+    cmd="eups distrib install -t ${tag} ${p}"
+    trace $cmd ; $cmd
     if [ $? != 0 ]; then
-        echo "${thisScript}: eups distrib install -t ${tag} ${p} failed"
+        echo "${thisScript}: command ${cmd} failed"
         exit 1
     fi
 done
@@ -156,6 +159,7 @@ done
 #
 # Add README file for this version
 #
+trace "creating README"
 if [[ ${os} == "linux" ]]; then
     platform=`lsb_release -d | cut -f 2-`
 else
@@ -176,6 +180,7 @@ EOF
 #
 # Configure EUPS site startup file
 #
+trace "configuring EUPS site startup file"
 cat >> ${buildDir}/site/startup.py <<-EOF
 # Configure EUPS not to try to acquire locks on a read-only file system
 hooks.config.site.lockDirectoryBase = None
@@ -184,9 +189,16 @@ EOF
 #
 # Make archive file
 #
+trace "building archive file"
 cd ${buildDir}/..
-tar --hard-dereference \
-    -zcf ${archiveDir}/${suffix}-${os}-x86_64.tar.gz ./`basename ${buildDir}`
+cmd="tar --hard-dereference \
+    -zcf ${archiveDir}/${suffix}-${os}-x86_64.tar.gz ./`basename ${buildDir}`"
+trace $cmd ; $cmd
+
+#
+# Display end message
+#
+trace "***** build process ended successfully ******"
 
 #
 # Clean up

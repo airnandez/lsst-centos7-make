@@ -106,9 +106,17 @@ else
 fi
 
 #
-# Create the build directory
+# Create the build directory: the build directory depends on the specified target
+# directory. If the target directory is "/cvmfs/...." then the build directory
+# ends like "lsst-v13.0" or "lsst-w2017_10".
+# Otherwise, the build directory ends like "lsst_distrib/v13.0" 
+# or "lsst_distrib/w_2017_10"
 #
-buildDir=${targetDir}/${baseProduct}/${suffix}
+if [[ ${targetDir} == /cvmfs/lsst.in2p3.fr/* ]]; then
+    buildDir=${targetDir}/"lsst-"${suffix}
+else
+    buildDir=${targetDir}/${baseProduct}/${suffix}
+fi
 rm -rf ${buildDir}
 mkdir -p ${buildDir}
 
@@ -132,6 +140,7 @@ logDir=${targetDir}/"log"
 mkdir -p ${logDir}
 logFile=${logDir}/${baseProduct}-${tag}.log
 rm -rf ${logFile}
+touch ${logFile}
 
 #
 # Set ownership of created directories
@@ -145,6 +154,6 @@ products=${baseProduct}
 if [[ ! -z "${optProducts}" ]]; then
     products=${products},${optProducts}
 fi
-su "${user}" -c "./buildStack.sh -l ${logFile} -p ${products} -b ${buildDir} -a ${archiveDir} -t ${tag}"
+(su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -t ${tag}") >> ${logFile}  2>&1
 
 exit 0
