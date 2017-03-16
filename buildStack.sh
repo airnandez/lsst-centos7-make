@@ -145,8 +145,7 @@ fi
 # Bootstrap the installation. After executing the bootstrap script, there must
 # be a file 'loadLSST.bash'
 #
-export TMPDIR=`mktemp -d -t ${suffix}-build-XXXXXXXXXX`
-
+export TMPDIR=`mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX`
 cmd="bash newinstall.sh -P /usr/bin/python -b"
 trace $cmd ; $cmd
 if [ ! -f "loadLSST.bash" ]; then
