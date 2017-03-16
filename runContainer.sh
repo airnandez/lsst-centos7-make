@@ -13,7 +13,7 @@
 #        <host volume> is the storage volume in the host where the container  #
 #            is executed. That volume will be used for building and storing   #
 #            a .tar.gz file of the LSST software distribution.                #
-#            Default: /scratch                                                #
+#            Default: /mnt                                                    #
 #                                                                             #
 #        <tag> is the tag, as known by EUPS, of the LSST software to build,   #
 #            such as "v12_1" for a stable version or "w_2016_30" for a weekly #
@@ -59,14 +59,14 @@ usage () {
 thisScript=`basename $0`
 
 # Directory in the host to be used by the container to build the software on
-hostVolume="/dev/shm/`whoami`"
+hostVolume="/mnt"
 mkdir -p ${hostVolume}
 
 # Target directory to build the software in (in container namespace)
 os=`uname -s | tr [:upper:] [:lower:]`
 targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
 
-# By defaukt, run the container in detached mode
+# By default, run the container in detached mode
 interactive=false
 
 #
@@ -99,11 +99,12 @@ if [[ -z "${tag}" ]]; then
 fi
 
 # Path of the in-container volume: we use the first component of the target
-# directory path. For instance, if the top directory is /cvmfs/lsst.in2p3.fr,
-# in the container we mount the volume in the container at '/cvmfs'
+# directory path. For instance, if the target directory is '/cvmfs/lsst.in2p3.fr',
+# in the container we mount the volume at '/cvmfs'
 containerVolume=`echo ${targetDir} | awk '{split($0,a,"/"); printf "/%s", a[2]}'`
 
 # Does the host volume actually exist?
+mkdir -p ${hostVolume} > /dev/null 2>&1
 df ${hostVolume} > /dev/null 2>&1
 if [ $? != 0 ]; then
     echo "${thisScript}: ${hostVolume} does not exist"
