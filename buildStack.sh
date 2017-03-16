@@ -131,6 +131,17 @@ trace "working directory" `pwd`
 trace $cmd ; $cmd
 
 #
+# Set deployment target for OS X
+#    10.9   Mavericks
+#    10.10  Yosemite
+#    10.11  El Capitan
+#    10.12  Sierra
+#
+if [ ${os} == "darwin" ]; then
+    export MACOSX_DEPLOYMENT_TARGET="10.9"
+fi
+
+#
 # Bootstrap the installation. After executing the bootstrap script, there must
 # be a file 'loadLSST.bash'
 #
@@ -198,7 +209,7 @@ trace $cmd ; $cmd
 #
 # Display end message
 #
-trace "***** build process ended successfully ******"
+trace "build process ended successfully"
 
 #
 # Clean up
