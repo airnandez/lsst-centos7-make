@@ -15,7 +15,7 @@
 #                                                                             #
 #    where:                                                                   #
 #        <user> is the username which will own the software built.            #
-#            Default: "lsstsw"                                                #
+#            Default: "lsstsw" on linux, current user on OS X                 #
 #                                                                             #
 #        <tag> is the tag, as known by EUPS, of the LSST software to build,   #
 #            such as "v12_1" for a stable version or "w_2016_30" for a weekly #
@@ -50,8 +50,12 @@
 thisScript=`basename $0`
 os=`uname -s | tr [:upper:] [:lower:]`
 targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
-user="lsstsw"
 baseProduct="lsst_distrib"
+if [ ${os} == "darwin" ]; then
+    user=$USER
+else
+    user="lsstsw"
+fi
 
 #
 # usage()
@@ -117,7 +121,10 @@ if [[ ${targetDir} == /cvmfs/lsst.in2p3.fr/* ]]; then
 else
     buildDir=${targetDir}/${baseProduct}/${suffix}
 fi
-rm -rf ${buildDir}
+if [ -d ${buildDir} ]; then
+    chmod -R u+w ${buildDir}
+    rm -rf ${buildDir}
+fi
 mkdir -p ${buildDir}
 
 #
@@ -154,6 +161,11 @@ products=${baseProduct}
 if [[ ! -z "${optProducts}" ]]; then
     products=${products},${optProducts}
 fi
-(su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -t ${tag}") >> ${logFile}  2>&1
+if [ `whoami` = ${user} ]; then
+    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -t ${tag}) >> ${logFile}  2>&1
+else
+    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -t ${tag}") >> ${logFile}  2>&1
+fi
+
 
 exit 0
