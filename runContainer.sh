@@ -128,7 +128,8 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
-# Extension to the name of the build directory
+# Add a 'py3' extension to the name of the build directory if we are installing
+# for Python 3
 buildDirExt=""
 if [[ ${pythonVersion} == "3" ]]; then
     buildDirExt="py3"
