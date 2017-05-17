@@ -6,8 +6,10 @@
 #    framework in the context of a Docker container.                          # 
 #    It is designed to be used either within the context of a Docker container#
 # Usage:                                                                      #
+#                                                                             #
 #    runContainer.sh [-v <host volume>]  [-d <target directory>]  [-i]        #
-#                    [-p products] [-Y <python version>] -t <tag>                                   #
+#                    [-p products] [-Y <python version>] -t <tag>             #
+#                                                                             #
 #                                                                             #
 #    where:                                                                   #
 #        <host volume> is the storage volume in the host where the container  #
@@ -54,7 +56,7 @@
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-p <products>] -t <tag>"
+    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-p <products>] [-x <extension>] -t <tag>"
 } 
 
 #
@@ -108,6 +110,11 @@ if [[ -z "${tag}" ]]; then
     exit 0
 fi
 
+if [[ ${pythonVersion} != "2" && ${pythonVersion} != "3" ]]; then
+    echo "${thisScript}: invalid Python version \"${pythonVersion}\" - expecting 2 or 3"
+    exit 1
+fi
+
 # Path of the in-container volume: we use the first component of the target
 # directory path. For instance, if the target directory is '/cvmfs/lsst.in2p3.fr',
 # in the container we mount the volume at '/cvmfs'
@@ -121,13 +128,20 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
+# Extension to the name of the build directory
+buildDirExt=""
+if [[ ${pythonVersion} == "3" ]]; then
+    buildDirExt="py3"
+fi
+
 if [ "${interactive}" == true ]; then
     mode="-it"
     cmd="/bin/bash"
 else
     productsFlag=${optProducts:+"-p ${optProducts}"}
+    extFlag=${buildDirExt:+"-x ${buildDirExt}"}
     mode="-d"
-    cmd="/bin/bash makeStack.sh -d ${targetDir} ${productsFlag} -Y ${pythonVersion} -t ${tag}"
+    cmd="/bin/bash makeStack.sh -d ${targetDir} ${productsFlag} -Y ${pythonVersion} ${extFlag} -t ${tag}"
 fi  
 
 # Run the container
