@@ -11,7 +11,7 @@
 #                                                                             #
 # Usage:                                                                      #
 #    makeStack.sh [-u <user>]  [-d <target directory>]  [-p products]         #
-#                  -t <tag>                                                   #
+#                 [-Y <python version>]  [-x <extension>] -t <tag>            #
 #                                                                             #
 #    where:                                                                   #
 #        <user> is the username which will own the software built.            #
@@ -37,6 +37,13 @@
 #            always installed first.                                          #
 #            Default: ""                                                      #
 #                                                                             #
+#        <python version> version of the Python interpreter to be installed   #
+#            valid values are "2" or "3".                                     #
+#            Default: "2"                                                     #
+#                                                                             #
+#        <extension> extension to the name of the build directory, e.g. "py3" #
+#            Default: ""                                                      #
+#                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
 #    IN2P3 / CNRS computing center                                            #
@@ -48,9 +55,11 @@
 # Init
 #
 thisScript=`basename $0`
-os=`uname -s | tr [:upper:] [:lower:]`
 targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
 baseProduct="lsst_distrib"
+pythonVersion="2"
+buildDirExt=""
+os=`uname -s | tr [:upper:] [:lower:]`
 if [ ${os} == "darwin" ]; then
     user=$USER
 else
@@ -61,13 +70,13 @@ fi
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-p <products>] -t <tag>"
+    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-p <products>] [-Y <python version>] -t <tag>"
 } 
 
 #
 # Parse command line arguments
 #
-while getopts d:t:u:p: optflag; do
+while getopts d:t:u:p:Y:x: optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -80,6 +89,12 @@ while getopts d:t:u:p: optflag; do
             ;;
         p)
             optProducts=${OPTARG}
+            ;;
+        Y)
+            pythonVersion=${OPTARG}
+            ;;
+        x)
+            buildDirExt=${OPTARG}
             ;;
     esac
 done
@@ -96,13 +111,15 @@ fi
 if [[ ${tag} =~ ^v[0-9]+_[0-9]+.*$ ]]; then
     # Stable version tag of the form 'v12_1'
     # The suffix will be of the form 'v12.1'
-    suffix=${tag//_/.}
+    # Add the build directory extension, if any (e.g. ".py3") for a stable tag
+    suffix=${tag//_/.}${buildDirExt:+".${buildDirExt}"}
     githubTag=$(printf ${tag} | tr "_" "." | sed "s/^v//")
 elif [[ ${tag} =~ ^w_[0-9]{4}_[0-9]{1,2}$ ]]; then
     # Weekly version tag of one of the forms 'w_2017_3' or 'w_2016_15'
     # The suffix will be identical to the weekly tag
     # The github tag has the form: w.2017.5
-    suffix=${tag}
+    # Add the build directory extension, if any (e.g. "_py3") for a weekly tag
+    suffix=${tag}${buildDirExt:+"_${buildDirExt}"}
     githubTag=$(printf ${tag} | tr "_" ".")
 else
     echo "${thisScript}: '${tag}' is not a recognized version tag"
@@ -122,6 +139,8 @@ else
     buildDir=${targetDir}/${baseProduct}/${suffix}
 fi
 if [ -d ${buildDir} ]; then
+    # Remove build directory if it already exists: newinstall.sh doesn't install
+    # in a non-empty directory
     chmod -R u+w ${buildDir}
     rm -rf ${buildDir}
 fi
@@ -162,9 +181,9 @@ if [[ ! -z "${optProducts}" ]]; then
     products=${products},${optProducts}
 fi
 if [ `whoami` = ${user} ]; then
-    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -t ${tag}) >> ${logFile}  2>&1
+    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}) >> ${logFile}  2>&1
 else
-    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -t ${tag}") >> ${logFile}  2>&1
+    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}") >> ${logFile}  2>&1
 fi
 
 

@@ -10,8 +10,8 @@
 #    via CernVM-FS or on a local directory.                                   #
 #                                                                             #
 # Usage:                                                                      #
-#    buildStack.sh -p products -b <build directory>  -a <archive directory>   #
-#                  -t <tag>                                                   #                                                 #
+#    buildStack.sh -p products  -b <build directory>  -a <archive directory>  #
+#                  -Y <python version>  -t <tag>                              #
 #                                                                             #
 #    where:                                                                   #
 #        <products> is the comma-separated list of EUPS products to be        #
@@ -24,6 +24,9 @@
 #            an archive file (.tar.gz) of the stack just built.               #
 #                                                                             #
 #        <tag> is the tag of the EUPS product to be installed.                #
+#                                                                             #
+#        <python version> version of the Python interpreter to be installed   #
+#            valid values are "2" or "3"
 #                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
@@ -49,7 +52,7 @@ trace() {
 }
 
 usage () { 
-    echo "Usage: ${thisScript} -p products -b <build directory> -a <archive directory>  -t <tag>"
+    echo "Usage: ${thisScript}  -p products  -b <build directory>  -a <archive directory>  -Y <python version> -t <tag>"
 }
 
 # Start execution
@@ -58,7 +61,7 @@ trace "$0" "$*"
 #
 # Parse and verify command line arguments
 #
-while getopts p:b:a:t: optflag; do
+while getopts p:b:a:t:Y: optflag; do
     case $optflag in
         p)
             products=${OPTARG//,/ }
@@ -72,11 +75,14 @@ while getopts p:b:a:t: optflag; do
         t)
             tag=${OPTARG}
             ;;
+        Y)
+            pythonVersion=${OPTARG}
+            ;;
     esac
 done
 shift $((OPTIND - 1))
 
-if [[ -z "${buildDir}" || -z "${archiveDir}" || -z "${tag}" || -z "${products}" ]]; then
+if [[ -z "${buildDir}" || -z "${archiveDir}" || -z "${tag}" || -z "${products}" || -z "${pythonVersion}" ]]; then
     usage
     exit 0
 fi
@@ -93,6 +99,11 @@ fi
 
 if [[ ${UID} = 0 ]]; then
     echo "${thisScript}: cannot run as root."
+    exit 1
+fi
+
+if [[ ${pythonVersion} != "2" && ${pythonVersion} != "3" ]]; then
+    echo "${thisScript}: invalid Python version \"${pythonVersion}\" - expecting 2 or 3"
     exit 1
 fi
 
@@ -146,7 +157,7 @@ fi
 # be a file 'loadLSST.bash'
 #
 export TMPDIR=`mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX`
-cmd="bash newinstall.sh -P /usr/bin/python -b"
+cmd="bash newinstall.sh -P /usr/bin/python -${pythonVersion} -b"
 trace $cmd ; $cmd
 if [ ! -f "loadLSST.bash" ]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
