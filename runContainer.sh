@@ -7,7 +7,7 @@
 #    It is designed to be used either within the context of a Docker container#
 # Usage:                                                                      #
 #    runContainer.sh [-v <host volume>]  [-d <target directory>]  [-i]        #
-#                    [-p products] -t <tag>                                   #
+#                    [-p products] [-Y <python version>] -t <tag>                                   #
 #                                                                             #
 #    where:                                                                   #
 #        <host volume> is the storage volume in the host where the container  #
@@ -39,6 +39,10 @@
 #            installed first.                                                 #
 #            Default: ""                                                      #
 #                                                                             #
+#        <python version> version of the Python interpreter to be installed   #
+#            valid values are "2" or "3".                                     #
+#            Default: "2"                                                     #
+#                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
 #    IN2P3 / CNRS computing center                                            #
@@ -69,10 +73,13 @@ targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
 # By default, run the container in detached mode
 interactive=false
 
+# Python version to install for this product
+pythonVersion="2"
+
 #
 # Parse command line arguments
 #
-while getopts d:t:v:ip: optflag; do
+while getopts d:t:v:ip:Y: optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -88,6 +95,9 @@ while getopts d:t:v:ip: optflag; do
             ;;
         p)
             optProducts=${OPTARG}
+            ;;
+        Y)
+            pythonVersion=${OPTARG}
             ;;
     esac
 done
@@ -117,7 +127,7 @@ if [ "${interactive}" == true ]; then
 else
     productsFlag=${optProducts:+"-p ${optProducts}"}
     mode="-d"
-    cmd="/bin/bash makeStack.sh -d ${targetDir} ${productsFlag} -t ${tag}"
+    cmd="/bin/bash makeStack.sh -d ${targetDir} ${productsFlag} -Y ${pythonVersion} -t ${tag}"
 fi  
 
 # Run the container

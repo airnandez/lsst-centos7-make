@@ -11,7 +11,7 @@
 #                                                                             #
 # Usage:                                                                      #
 #    makeStack.sh [-u <user>]  [-d <target directory>]  [-p products]         #
-#                  -t <tag>                                                   #
+#                 [-Y <python version>]  -t <tag>                                                   #
 #                                                                             #
 #    where:                                                                   #
 #        <user> is the username which will own the software built.            #
@@ -37,6 +37,10 @@
 #            always installed first.                                          #
 #            Default: ""                                                      #
 #                                                                             #
+#        <python version> version of the Python interpreter to be installed   #
+#            valid values are "2" or "3".                                     #
+#            Default: "2"                                                     #
+#                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
 #    IN2P3 / CNRS computing center                                            #
@@ -48,9 +52,10 @@
 # Init
 #
 thisScript=`basename $0`
-os=`uname -s | tr [:upper:] [:lower:]`
 targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
 baseProduct="lsst_distrib"
+pythonVersion="2"
+os=`uname -s | tr [:upper:] [:lower:]`
 if [ ${os} == "darwin" ]; then
     user=$USER
 else
@@ -61,13 +66,13 @@ fi
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-p <products>] -t <tag>"
+    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-p <products>] [-Y <python version>] -t <tag>"
 } 
 
 #
 # Parse command line arguments
 #
-while getopts d:t:u:p: optflag; do
+while getopts d:t:u:p:Y: optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -80,6 +85,9 @@ while getopts d:t:u:p: optflag; do
             ;;
         p)
             optProducts=${OPTARG}
+            ;;
+        Y)
+            pythonVersion=${OPTARG}
             ;;
     esac
 done
@@ -162,9 +170,9 @@ if [[ ! -z "${optProducts}" ]]; then
     products=${products},${optProducts}
 fi
 if [ `whoami` = ${user} ]; then
-    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -t ${tag}) >> ${logFile}  2>&1
+    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}) >> ${logFile}  2>&1
 else
-    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -t ${tag}") >> ${logFile}  2>&1
+    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}") >> ${logFile}  2>&1
 fi
 
 
