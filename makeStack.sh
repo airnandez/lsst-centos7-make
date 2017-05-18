@@ -164,7 +164,7 @@ mkdir -p ${archiveDir}
 #
 logDir=${targetDir}/"log"
 mkdir -p ${logDir}
-logFile=${logDir}/${baseProduct}-${tag}.log
+logFile=${logDir}/${baseProduct}-${tag}-py${pythonVersion}.log
 rm -rf ${logFile}
 touch ${logFile}
 
