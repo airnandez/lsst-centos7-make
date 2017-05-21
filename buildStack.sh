@@ -213,7 +213,7 @@ EOF
 trace "building archive file"
 cd ${buildDir}/..
 cmd="tar --hard-dereference \
-    -zcf ${archiveDir}/${suffix}-${os}-x86_64.tar.gz ./`basename ${buildDir}`"
+    -zcf ${archiveDir}/${suffix}-py${pythonVersion}-${os}-x86_64.tar.gz ./`basename ${buildDir}`"
 trace $cmd ; $cmd
 
 #
