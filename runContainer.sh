@@ -148,8 +148,8 @@ fi
 # Run the container
 imageName="airnandez/lsst-centos7-make"
 containerName=`echo ${imageName} | awk '{split($0,a,"/"); printf "%s", a[2]}'`
-docker run --name ${containerName}-${tag}              \
-           --volume ${hostVolume}:${containerVolume}   \
-           ${mode}                                     \
-           ${imageName}                                \
+docker run --name ${containerName}-${tag}-py${pythonVersion}  \
+           --volume ${hostVolume}:${containerVolume}          \
+           ${mode}                                            \
+           ${imageName}                                       \
            ${cmd}
