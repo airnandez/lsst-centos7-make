@@ -202,7 +202,7 @@ EOF
 # Configure EUPS site startup file
 #
 trace "configuring EUPS site startup file"
-cat >> ${buildDir}/site/startup.py <<-EOF
+cat >> ${buildDir}/stack/current/site/startup.py <<-EOF
 # Configure EUPS not to try to acquire locks on a read-only file system
 hooks.config.site.lockDirectoryBase = None
 EOF
