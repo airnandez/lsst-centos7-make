@@ -157,7 +157,7 @@ fi
 # be a file 'loadLSST.bash'
 #
 export TMPDIR=`mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX`
-cmd="bash newinstall.sh -P /usr/bin/python -${pythonVersion} -b"
+cmd="bash newinstall.sh -P /usr/bin/python -${pythonVersion} -b -t"
 trace $cmd ; $cmd
 if [ ! -f "loadLSST.bash" ]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
