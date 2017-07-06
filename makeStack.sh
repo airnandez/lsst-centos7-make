@@ -57,7 +57,7 @@
 thisScript=`basename $0`
 targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
 baseProduct="lsst_distrib"
-pythonVersion="2"
+pythonVersion="3"
 buildDirExt=""
 os=`uname -s | tr [:upper:] [:lower:]`
 if [ ${os} == "darwin" ]; then

@@ -43,7 +43,7 @@
 #                                                                             #
 #        <python version> version of the Python interpreter to be installed   #
 #            valid values are "2" or "3".                                     #
-#            Default: "2"                                                     #
+#            Default: "3"                                                     #
 #                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
@@ -76,7 +76,7 @@ targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
 interactive=false
 
 # Python version to install for this product
-pythonVersion="2"
+pythonVersion="3"
 
 #
 # Parse command line arguments
@@ -131,8 +131,8 @@ fi
 # Add a 'py3' extension to the name of the build directory if we are installing
 # for Python 3
 buildDirExt=""
-if [[ ${pythonVersion} == "3" ]]; then
-    buildDirExt="py3"
+if [[ ${pythonVersion} == "2" ]]; then
+    buildDirExt="py2"
 fi
 
 if [ "${interactive}" == true ]; then
