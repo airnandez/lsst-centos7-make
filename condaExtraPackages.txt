@@ -1,0 +1,6 @@
+#
+# This is the list of conda packages which are not part of the official
+# LSST distribution that we want to install.
+# It will be consumed by the 'conda install' command
+#
+ipython

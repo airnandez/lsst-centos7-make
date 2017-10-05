@@ -165,9 +165,35 @@ if [ ! -f "loadLSST.bash" ]; then
 fi
 
 #
-# Download and build the requested products
+# Source minimal LSST environment
 #
 source loadLSST.bash
+
+#
+# Install conda packages not included in distribution
+# The extra packages to install are specified in a text file to be consumed
+# by the 'conda install' command. Each line of this file contains the name
+# of a package. When installing those extra packages we make sure to not
+# modify dependencies which are the conda packages on top of which the
+# version of the LSST software has been tested against.
+#
+condaExtensionsFile="${HOME}/condaExtraPackages.txt"
+if [ -f ${condaExtensionsFile} ]; then
+    # Filter out comments and check if there are actually packages to install
+    grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        cmd="conda install --no-update-deps --yes --channel=defaults --file=${condaExtensionsFile}"
+        trace $cmd ; $cmd
+        if [ $? != 0 ]; then
+            echo "${thisScript}: could not install conda extensions"
+            exit 1
+        fi
+    fi
+fi
+
+#
+# Download and build the requested products
+#
 for p in ${products}; do
     cmd="eups distrib install -t ${tag} ${p}"
     trace $cmd ; $cmd
