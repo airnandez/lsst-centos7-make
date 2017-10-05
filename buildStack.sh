@@ -177,7 +177,7 @@ source loadLSST.bash
 # modify dependencies which are the conda packages on top of which the
 # version of the LSST software has been tested against.
 #
-condaExtensionsFile="condaExtraPackages.txt"
+condaExtensionsFile="${HOME}/condaExtraPackages.txt"
 if [ -f ${condaExtensionsFile} ]; then
     # Filter out comments and check if there are actually packages to install
     grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
