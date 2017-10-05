@@ -31,6 +31,6 @@ RUN useradd --create-home --uid 361 --user-group --home-dir /home/${username} ${
 # Add build script
 #
 WORKDIR /home/${username}
-ADD ["makeStack.sh", "buildStack.sh", "./"]
+ADD ["makeStack.sh", "buildStack.sh", "condaExtraPackages.txt", "./"]
 
 CMD /bin/bash
