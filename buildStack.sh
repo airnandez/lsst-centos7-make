@@ -252,8 +252,10 @@ trace $cmd ; $cmd
 #
 # Upload archive file
 #
-if [[ -x ~/upload.sh ]]; then
-    cmd="~/upload.sh ${archiveFile}"
+set -x
+uploadExe=~"${user}/upload.sh"
+if [[ -x "${uploadExe}" ]]; then
+    cmd="${uploadExe} ${archiveFile}"
     trace "uploading archive file" ; $cmd
 fi
 
