@@ -182,7 +182,7 @@ if [ -f ${condaExtensionsFile} ]; then
     # Filter out comments and check if there are actually packages to install
     grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-        cmd="conda install --no-update-deps --yes --file=${condaExtensionsFile}"
+        cmd="conda install --no-update-deps --quiet --yes --file=${condaExtensionsFile}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             echo "${thisScript}: could not install conda extensions"
@@ -236,7 +236,7 @@ EOF
 #
 # Change permissions for this installation
 #
-trace "modyfiing permissions under ${buildDir}"
+trace "modyfying permissions under ${buildDir}"
 cmd="chmod -R u-w,g-w,o-w ${buildDir}"
 trace $cmd ; $cmd
 
