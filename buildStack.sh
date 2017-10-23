@@ -253,10 +253,14 @@ trace $cmd ; $cmd
 # Upload archive file
 #
 set -x
-uploadExe=~"${user}/upload.sh"
+uploadExe="~${user}/upload.sh"
 if [[ -x "${uploadExe}" ]]; then
+    trace "uploading archive file"
     cmd="${uploadExe} ${archiveFile}"
     trace "uploading archive file" ; $cmd
+else
+    trace "file ${uploadExe} not executable or not found"
+    ls -al ${uploadExe}
 fi
 
 #
