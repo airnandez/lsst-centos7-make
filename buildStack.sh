@@ -244,9 +244,9 @@ trace $cmd ; $cmd
 # Make archive file
 #
 trace "building archive file"
+archiveFile="${archiveDir}/${suffix}-py${pythonVersion}-${os}-x86_64.tar.gz"
 cd ${buildDir}/..
-cmd="tar --hard-dereference \
-    -zcf ${archiveDir}/${suffix}-py${pythonVersion}-${os}-x86_64.tar.gz ./`basename ${buildDir}`"
+cmd="tar --hard-dereference -zcf ${archiveFile} ./`basename ${buildDir}`"
 trace $cmd ; $cmd
 
 #
