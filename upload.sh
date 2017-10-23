@@ -51,6 +51,14 @@ echo ${RCLONE_CREDENTIALS} | base64 -d > ${rcloneConfFile} && chmod g-rwx,o-rwx 
 #
 # Upload the archive file to its destination bucket
 #
-${rcloneExe} --config ${rcloneConfFile} copy ${archiveFile} "cc:sandbox"
+bucket="cc:sandbox"
+destination="${bucket}/py3"
+
+re=".*-py2-.*"
+if [[ ${archiveFile} =~ $re ]]; then
+   destination="${bucket}/py2"
+fi
+
+${rcloneExe} --config ${rcloneConfFile} copy ${archiveFile} ${destination}/`basename ${archiveFile}`
 
 exit $?
