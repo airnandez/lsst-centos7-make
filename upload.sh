@@ -21,8 +21,8 @@ fi
 #
 # We need the rclone credentials for the upload to succeed
 #
-if [ -z "${RCLONE_CREDS}" ]; then
-	echo "${thisScript}: environment variable RCLONE_CREDS not set or empty"
+if [ -z "${RCLONE_CREDENTIALS}" ]; then
+	echo "${thisScript}: environment variable RCLONE_CREDENTIALS not set or empty"
 	exit 1
 fi
 
@@ -46,7 +46,7 @@ chmod u+x ${rcloneExe}
 # Create a rclone.conf file with appropriate permissions
 #
 rcloneConfFile=${TMPDIR}/.rclone.conf
-echo ${RCLONE_CREDS} | base64 -d > ${rcloneConfFile} && chmod g-rwx,o-rwx ${rcloneConfFile}
+echo ${RCLONE_CREDENTIALS} | base64 -d > ${rcloneConfFile} && chmod g-rwx,o-rwx ${rcloneConfFile}
 
 #
 # Upload the archive file to its destination bucket

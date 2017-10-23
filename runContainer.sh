@@ -143,7 +143,14 @@ else
     extFlag=${buildDirExt:+"-x ${buildDirExt}"}
     mode="-d"
     cmd="/bin/bash makeStack.sh -d ${targetDir} ${productsFlag} -Y ${pythonVersion} ${extFlag} -t ${tag}"
-fi  
+fi
+
+# Set environment variables for the container
+envVars=""
+if [ -f ~/.rclone.conf ]; then
+    RCLONE_CREDENTIALS=`cat ~/.rclone.conf | base64 -w 0`
+    envVars="-e RCLONE_CREDENTIALS=${RCLONE_CREDENTIALS}"
+fi
 
 # Run the container
 imageName="airnandez/lsst-centos7-make"
@@ -151,5 +158,6 @@ containerName=`echo ${imageName} | awk '{split($0,a,"/"); printf "%s", a[2]}'`
 docker run --name ${containerName}-${tag}-py${pythonVersion}  \
            --volume ${hostVolume}:${containerVolume}          \
            ${mode}                                            \
+           ${envVars}                                         \
            ${imageName}                                       \
            ${cmd}
