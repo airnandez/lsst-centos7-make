@@ -19,7 +19,7 @@ RUN yum install -q -y bison curl blas bzip2-devel bzip2 flex fontconfig \
 #
 # Install additional packages useful for the build system
 #
-RUN yum install -q -y redhat-lsb
+RUN yum install -q -y redhat-lsb unzip
 
 #
 # Create non-privileged user
@@ -31,6 +31,6 @@ RUN useradd --create-home --uid 361 --user-group --home-dir /home/${username} ${
 # Add build script
 #
 WORKDIR /home/${username}
-ADD ["makeStack.sh", "buildStack.sh", "condaExtraPackages.txt", "./"]
+ADD ["makeStack.sh", "buildStack.sh", "upload.sh", "condaExtraPackages.txt", "./"]
 
 CMD /bin/bash
