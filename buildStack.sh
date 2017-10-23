@@ -182,7 +182,7 @@ if [ -f ${condaExtensionsFile} ]; then
     # Filter out comments and check if there are actually packages to install
     grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-        cmd="conda install --no-update-deps --yes --channel=defaults --file=${condaExtensionsFile}"
+        cmd="conda install --no-update-deps --yes --file=${condaExtensionsFile}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             echo "${thisScript}: could not install conda extensions"
