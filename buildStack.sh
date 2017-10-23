@@ -234,6 +234,13 @@ hooks.config.site.lockDirectoryBase = None
 EOF
 
 #
+# Change permissions for this installation
+#
+trace "modyfiing permissions under ${buildDir}"
+cmd="chmod -R u-w,g-w,o-w ${buildDir}"
+trace $cmd ; $cmd
+
+#
 # Make archive file
 #
 trace "building archive file"
