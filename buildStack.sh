@@ -250,6 +250,14 @@ cmd="tar --hard-dereference -zcf ${archiveFile} ./`basename ${buildDir}`"
 trace $cmd ; $cmd
 
 #
+# Upload archive file
+#
+if [[ -x ~/upload.sh ]]; then
+    cmd="~/upload.sh ${archiveFile}"
+    trace "uploading archive file" ; $cmd
+fi
+
+#
 # Display end message
 #
 trace "build process ended successfully"
