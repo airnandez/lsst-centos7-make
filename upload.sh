@@ -83,13 +83,21 @@ else
 fi
 
 #
-# Upload the archive file to its destination bucket
+# Upload the archive file to its destination bucket.
+# We use two buckets: 'stables' for stable versions and 'weeklies' for weekly versions
+# Archive files names with a pattern such as 'w_2017_42' are uploaded to 'weeklies' and
+# archive files named 'v14' are uploaded to 'stables'
 #
-bucket="cc:sandbox"
-destination="${bucket}/py3"
-re=".*-py2.*"
-if [[ ${archiveFile} =~ $re ]]; then
-   destination="${bucket}/py2"
+archiveBasename=`basename ${archiveFile}`
+if [[ ${archiveBasename} =~ \.*v[0-9].*- ]]; then
+    bucket="cc:stables"
+else
+    bucket="cc:weeklies"
+fi
+if [[ ${archiveBasename} =~ \.*-py3-\.* ]]; then
+    destination="${bucket}/py3"
+else
+    destination="${bucket}/py2"
 fi
 
 ${rcloneExe} -I --config ${rcloneConfFile} copy ${archiveFile} ${destination}
