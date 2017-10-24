@@ -18,6 +18,11 @@ if [ -z "${archiveFile}" ]; then
 	exit 1
 fi
 
+if [ ! -f "${archiveFile}" ]; then
+    echo "${thisScript}: file ${archiveFile} not found"
+    exit 1
+fi
+
 #
 # We need the rclone credentials for the upload to succeed
 #
@@ -30,16 +35,28 @@ fi
 # Set temporary directory
 #
 USER=${USER:-`id -un`}
-mkdir -p /dev/shm/$USER/tmp && chmod g-rwx,o-rwx /dev/shm/$USER/tmp
 TMPDIR="/dev/shm/$USER/tmp"
+mkdir -p ${TMPDIR} && chmod g-rwx,o-rwx ${TMPDIR}
 
 #
 # Download and install rclone executable
 #
 rcloneUrl="https://downloads.rclone.org/rclone-current-linux-amd64.zip"
-curl -s -OL ${rcloneUrl} ${TMPDIR}
-rm -rf ${TMPDIR}/rclone && unzip -qq -d ${TMPDIR}/rclone rclone-current-linux-amd64.zip 
-rcloneExe=`find ${TMPDIR}/rclone -name rclone -type f -print`
+rcloneZipFile=${TMPDIR}/rclone-current-linux-amd64.zip
+rm -rf ${rcloneZipFile}
+curl -s -L -o ${rcloneZipFile} ${rcloneUrl}
+if [ $? -ne 0 ]; then
+	echo "${thisScript}: error downloading rclone"
+	exit 1
+fi
+unzipDir=${TMPDIR}/rclone
+rm -rf ${unzipDir}
+unzip -qq -d ${unzipDir} ${rcloneZipFile}
+rcloneExe=`find ${unzipDir} -name rclone -type f -print`
+if [[ ! -f ${rcloneExe} ]]; then
+	echo "${thisScript}: could not find rclone executable at ${rcloneExe}"
+	exit 1
+fi
 chmod u+x ${rcloneExe}
 
 #
@@ -58,6 +75,12 @@ if [[ ${archiveFile} =~ $re ]]; then
    destination="${bucket}/py2"
 fi
 
-${rcloneExe} --config ${rcloneConfFile} copy ${archiveFile} ${destination}/`basename ${archiveFile}`
+${rcloneExe} -I --config ${rcloneConfFile} copy ${archiveFile} ${destination}
+rc=$?
 
-exit $?
+#
+# Remove rclone config file
+#
+rm -rf ${rcloneConfFile}
+
+exit $rc
