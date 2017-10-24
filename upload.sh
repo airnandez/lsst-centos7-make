@@ -53,8 +53,7 @@ echo ${RCLONE_CREDENTIALS} | base64 -d > ${rcloneConfFile} && chmod g-rwx,o-rwx 
 #
 bucket="cc:sandbox"
 destination="${bucket}/py3"
-
-re=".*-py2-.*"
+re=".*-py2.*"
 if [[ ${archiveFile} =~ $re ]]; then
    destination="${bucket}/py2"
 fi
