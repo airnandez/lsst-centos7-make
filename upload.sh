@@ -4,6 +4,7 @@
 # Init
 #
 thisScript=`basename $0`
+os=`uname -s | tr [:upper:] [:lower:]`
 
 usage () { 
     echo "Usage: ${thisScript} <archive file>"
@@ -24,31 +25,41 @@ if [ ! -f "${archiveFile}" ]; then
 fi
 
 #
-# We need the rclone credentials for the upload to succeed
+# We need the rclone credentials for the upload to succeed or a $HOME/.rclone.conf file
 #
-if [ -z "${RCLONE_CREDENTIALS}" ]; then
-	echo "${thisScript}: environment variable RCLONE_CREDENTIALS not set or empty"
-	exit 1
+if [ -z "${RCLONE_CREDENTIALS}" ] && [ ! -f "$HOME/.rclone.conf" ]; then
+    echo "${thisScript}: environment variable RCLONE_CREDENTIALS not set or empty and $HOME/.rclone.conf not found"
+    exit 1
 fi
 
 #
-# Set temporary directory
+# Prepare temporary directory
 #
 USER=${USER:-`id -un`}
-TMPDIR="/dev/shm/$USER/tmp"
-mkdir -p ${TMPDIR} && chmod g-rwx,o-rwx ${TMPDIR}
+if [ ${os} == "darwin" ]; then
+    TMPDIR=`mktemp -d /tmp/$USER.XXXXX`
+else
+    TMPDIR=`mktemp -d -p /dev/shm/$USER tmp.XXXXX`
+fi
 
 #
-# Download and install rclone executable
+# Download rclone executable
 #
 rcloneUrl="https://downloads.rclone.org/rclone-current-linux-amd64.zip"
-rcloneZipFile=${TMPDIR}/rclone-current-linux-amd64.zip
+if [ ${os} == "darwin" ]; then
+    rcloneUrl="https://downloads.rclone.org/rclone-current-osx-amd64.zip"
+fi
+rcloneZipFile=${TMPDIR}/rclone-current-amd64.zip
 rm -rf ${rcloneZipFile}
 curl -s -L -o ${rcloneZipFile} ${rcloneUrl}
 if [ $? -ne 0 ]; then
 	echo "${thisScript}: error downloading rclone"
 	exit 1
 fi
+
+#
+# Unpackage rclone and make it ready for execution
+#
 unzipDir=${TMPDIR}/rclone
 rm -rf ${unzipDir}
 unzip -qq -d ${unzipDir} ${rcloneZipFile}
@@ -62,8 +73,14 @@ chmod u+x ${rcloneExe}
 #
 # Create a rclone.conf file with appropriate permissions
 #
-rcloneConfFile=${TMPDIR}/.rclone.conf
-echo ${RCLONE_CREDENTIALS} | base64 -d > ${rcloneConfFile} && chmod g-rwx,o-rwx ${rcloneConfFile}
+if [ -f "$HOME/.rclone.conf" ]; then
+    rcloneConfFile="$HOME/.rclone.conf"
+    eraseRcloneConf="false"
+else
+    eraseRcloneConf="true"
+    rcloneConfFile=${TMPDIR}/.rclone.conf
+    echo ${RCLONE_CREDENTIALS} | base64 -d > ${rcloneConfFile} && chmod g-rwx,o-rwx ${rcloneConfFile}
+fi
 
 #
 # Upload the archive file to its destination bucket
@@ -79,8 +96,15 @@ ${rcloneExe} -I --config ${rcloneConfFile} copy ${archiveFile} ${destination}
 rc=$?
 
 #
-# Remove rclone config file
+# Remove rclone config file, if needed
 #
-rm -rf ${rcloneConfFile}
+if [ ${eraseRcloneConf} = "true" ]; then
+    rm -f ${rcloneConfFile}
+fi
+
+#
+# Clean up
+#
+rm -rf ${TMPDIR}
 
 exit $rc
