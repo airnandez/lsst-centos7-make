@@ -39,6 +39,7 @@
 # Init
 #
 thisScript=`basename $0`
+thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 user=`whoami`
 os=`uname -s | tr [:upper:] [:lower:]`
 TMPDIR=${TMPDIR:-/tmp}
@@ -177,11 +178,12 @@ source loadLSST.bash
 # modify dependencies which are the conda packages on top of which the
 # version of the LSST software has been tested against.
 #
-condaExtensionsFile="${HOME}/condaExtraPackages.txt"
+condaExtensionsFile="${thisScriptDir}/condaExtraPackages.txt"
 if [ -f ${condaExtensionsFile} ]; then
     # Filter out comments and check if there are actually packages to install
     grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
+        trace "installing conda extra packages"
         cmd="conda install --no-update-deps --quiet --yes --file=${condaExtensionsFile}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
@@ -244,15 +246,19 @@ trace $cmd ; $cmd
 # Make archive file
 #
 trace "building archive file"
+tarCmd="tar"
+if [ ${os} == "darwin" ]; then
+    tarCmd="gnutar"
+fi
 archiveFile="${archiveDir}/${suffix}-py${pythonVersion}-${os}-x86_64.tar.gz"
 cd ${buildDir}/..
-cmd="tar --hard-dereference -zcf ${archiveFile} ./`basename ${buildDir}`"
+cmd="${tarCmd} --hard-dereference -zcf ${archiveFile} ./`basename ${buildDir}`"
 trace $cmd ; $cmd
 
 #
 # Upload archive file
 #
-uploadExe="${HOME}/upload.sh"
+uploadExe="${thisScriptDir}/upload.sh"
 if [[ -x "${uploadExe}" ]]; then
     trace "uploading archive file..."
     cmd="${uploadExe} ${archiveFile}"
