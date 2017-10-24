@@ -15,8 +15,8 @@ usage () {
 #
 archiveFile=$1
 if [ -z "${archiveFile}" ]; then
-	usage
-	exit 1
+    usage
+    exit 1
 fi
 
 if [ ! -f "${archiveFile}" ]; then
@@ -53,8 +53,8 @@ rcloneZipFile=${TMPDIR}/rclone-current-amd64.zip
 rm -rf ${rcloneZipFile}
 curl -s -L -o ${rcloneZipFile} ${rcloneUrl}
 if [ $? -ne 0 ]; then
-	echo "${thisScript}: error downloading rclone"
-	exit 1
+    echo "${thisScript}: error downloading rclone"
+    exit 1
 fi
 
 #
@@ -65,8 +65,8 @@ rm -rf ${unzipDir}
 unzip -qq -d ${unzipDir} ${rcloneZipFile}
 rcloneExe=`find ${unzipDir} -name rclone -type f -print`
 if [[ ! -f ${rcloneExe} ]]; then
-	echo "${thisScript}: could not find rclone executable at ${rcloneExe}"
-	exit 1
+    echo "${thisScript}: could not find rclone executable at ${rcloneExe}"
+    exit 1
 fi
 chmod u+x ${rcloneExe}
 
