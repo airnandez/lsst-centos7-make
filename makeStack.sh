@@ -55,16 +55,16 @@
 # Init
 #
 thisScript=`basename $0`
-targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
-baseProduct="lsst_distrib"
-pythonVersion="3"
-buildDirExt=""
 os=`uname -s | tr [:upper:] [:lower:]`
 if [ ${os} == "darwin" ]; then
     user=$USER
 else
     user="lsstsw"
 fi
+targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
+baseProduct="lsst_distrib"
+pythonVersion="3"
+buildDirExt=""
 
 #
 # usage()
