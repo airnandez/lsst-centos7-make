@@ -36,10 +36,12 @@ fi
 # Prepare temporary directory
 #
 USER=${USER:-`id -un`}
+TMPDIR=${TMPDIR:-"/tmp"}
+mkdir -p ${TMPDIR}
 if [ ${os} == "darwin" ]; then
-    TMPDIR=`mktemp -d /tmp/$USER.XXXXX`
+    TMPDIR=`mktemp -d ${TMPDIR}/${USER}.upload.XXXXX`
 else
-    TMPDIR=`mktemp -d -p /dev/shm/$USER tmp.XXXXX`
+    TMPDIR=`mktemp -d -p ${TMPDIR} ${USER}.upload.XXXXX`
 fi
 
 #
