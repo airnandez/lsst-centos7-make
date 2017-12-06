@@ -250,7 +250,8 @@ tarCmd="tar"
 if [ ${os} == "darwin" ]; then
     tarCmd="gnutar"
 fi
-archiveFile="${archiveDir}/${suffix}-py${pythonVersion}-${os}-x86_64.tar.gz"
+tarFileName=`echo ${buildDir}-py${pythonVersion}-${os}"-x86_64.tar.gz" | cut -b 2- | tr [/] [_]`
+archiveFile=${archiveDir}/${tarFileName}
 cd ${buildDir}/..
 cmd="${tarCmd} --hard-dereference -zcf ${archiveFile} ./`basename ${buildDir}`"
 trace $cmd ; $cmd
