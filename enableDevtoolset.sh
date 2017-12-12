@@ -4,4 +4,4 @@
 # Set the environment to use devtoolset-6
 # Usage: source <this file>
 #
-scl_source enable devtoolset-6
+source scl_source enable devtoolset-6

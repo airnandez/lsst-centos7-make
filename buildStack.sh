@@ -130,7 +130,7 @@ fi
 #
 # Set the environment for building this release
 #
-[[ -f ${HOME}/setEnv.sh ]] && source ${HOME}/setEnv.sh
+[[ -f ${HOME}/enableDevtoolset.sh ]] && source ${HOME}/enableDevtoolset.sh
 
 #
 # Download the bootstrap installer from the canonical repository
@@ -208,6 +208,15 @@ for p in ${products}; do
         exit 1
     fi
 done
+
+#
+# Extend the loadLSST.*sh scripts to enable devtoolset
+#
+if [ -f ${HOME}/enableDevtoolset.sh ]; then
+    for s in loadLSST.*sh; do
+        grep -v "#" ${HOME}/enableDevtoolset.sh >> $s
+    done
+fi
 
 #
 # Add README file for this version
