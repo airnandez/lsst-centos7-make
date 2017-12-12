@@ -1,8 +1,8 @@
 FROM centos:centos7
 
 LABEL maintainer="Fabio Hernandez <fabio@in2p3.fr>" \
-	  keywords="CernVM-FS,cvmfs,lsst,binary distribution" \
-      purpose="Base image for building the LSST software framework for \
+	keywords="CernVM-FS,cvmfs,lsst,binary distribution" \
+	purpose="Base image for building the LSST software framework for \
 distribution via CernVM-FS and for local installation"
       
 
@@ -20,6 +20,8 @@ RUN yum install -q -y bison curl blas bzip2-devel bzip2 flex fontconfig \
 # Install additional packages useful for the build system
 #
 RUN yum install -q -y redhat-lsb unzip
+RUN yum install -q -y centos-release-scl
+RUN yum install -q -y devtoolset-6
 
 #
 # Create non-privileged user
@@ -31,6 +33,6 @@ RUN useradd --create-home --uid 361 --user-group --home-dir /home/${username} ${
 # Add build script
 #
 WORKDIR /home/${username}
-ADD ["makeStack.sh", "buildStack.sh", "upload.sh", "condaExtraPackages.txt", "./"]
+ADD ["makeStack.sh", "buildStack.sh", "setEnv.sh", "upload.sh", "condaExtraPackages.txt", "./"]
 
 CMD /bin/bash

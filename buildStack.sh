@@ -127,6 +127,10 @@ else
     exit 1
 fi
 
+#
+# Set the environment for building this release
+#
+[[ -f ${HOME}/setEnv.sh ]] && source ${HOME}/setEnv.sh
 
 #
 # Download the bootstrap installer from the canonical repository
