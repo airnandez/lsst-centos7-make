@@ -184,7 +184,7 @@ if [ -f ${condaExtensionsFile} ]; then
     grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         trace "installing conda extra packages"
-        cmd="conda install --no-update-deps --quiet --yes --file=${condaExtensionsFile}"
+        cmd="conda install --no-update-deps -c defaults -c astropy -c conda-forge --quiet --yes --file=${condaExtensionsFile}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             echo "${thisScript}: could not install conda extensions"

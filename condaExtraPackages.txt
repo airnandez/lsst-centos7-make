@@ -4,3 +4,9 @@
 # It will be consumed by the 'conda install' command
 #
 ipython
+jupyter
+jupyterlab
+ginga
+ipywidgets
+ipyevents
+tqdm
