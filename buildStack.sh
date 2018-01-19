@@ -210,12 +210,22 @@ for p in ${products}; do
 done
 
 #
-# Extend the loadLSST.*sh scripts to enable devtoolset
+# Perform OS-specific post-installation
 #
-if [ -f ${HOME}/enableDevtoolset.sh ]; then
-    for s in loadLSST.*sh; do
-        grep -v "#" ${HOME}/enableDevtoolset.sh >> $s
-    done
+if [ ${os} == "darwin" ]; then
+	#
+	# Update the Python interpreter path of EUPS installed products
+	#
+    curl -sSL https://raw.githubusercontent.com/lsst/shebangtron/master/shebangtron | python
+elif [ ${os} == "linux" ]; then
+	#
+	# Extend the loadLSST.*sh scripts to enable devtoolset
+	#
+	if [ -f ${HOME}/enableDevtoolset.sh ]; then
+	    for s in loadLSST.*sh; do
+	        grep -v "#" ${HOME}/enableDevtoolset.sh >> $s
+	    done
+	fi
 fi
 
 #
