@@ -216,11 +216,20 @@ if [[ ${os} == "darwin" ]]; then
 	#
 	# Update the Python interpreter path of EUPS installed products
 	#
-    curl -sSL https://raw.githubusercontent.com/lsst/shebangtron/master/shebangtron | python
+	trace "applying shebangtron"
+	shebangtron=${TMPDIR}/shebangtron
+    curl -sSL -o ${shebangtron} "https://raw.githubusercontent.com/lsst/shebangtron/master/shebangtron"
+    if [[ ! -f ${shebangtron} ]]; then
+    	echo "${thisScript}: file ${shebangtron} not found"
+    	exit 1
+	fi
+    cmd="python ${shebangtron}"
+    trace $cmd; $cmd
 elif [[ ${os} == "linux" ]]; then
 	#
 	# Extend the loadLSST.*sh scripts to enable devtoolset
 	#
+	trace "modifying loadLsst for devtoolset"
 	if [[ -f ${HOME}/enableDevtoolset.sh ]]; then
 	    for s in loadLSST.*sh; do
 	        grep -v "#" ${HOME}/enableDevtoolset.sh >> $s
