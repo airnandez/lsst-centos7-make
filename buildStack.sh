@@ -225,6 +225,7 @@ if [[ ${os} == "darwin" ]]; then
 	fi
     cmd="python ${shebangtron}"
     trace $cmd; $cmd
+    trace "shebangtron finished"
 elif [[ ${os} == "linux" ]]; then
 	#
 	# Extend the loadLSST.*sh scripts to enable devtoolset
