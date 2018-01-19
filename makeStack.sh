@@ -56,7 +56,7 @@
 #
 thisScript=`basename $0`
 os=`uname -s | tr [:upper:] [:lower:]`
-if [ ${os} == "darwin" ]; then
+if [[ ${os} == "darwin" ]]; then
     user=$USER
 else
     user="lsstsw"
@@ -138,7 +138,7 @@ if [[ ${targetDir} == /cvmfs/lsst.in2p3.fr/* ]]; then
 else
     buildDir=${targetDir}/${baseProduct}/${suffix}
 fi
-if [ -d ${buildDir} ]; then
+if [[ -d ${buildDir} ]]; then
     # Remove build directory if it already exists: newinstall.sh doesn't install
     # in a non-empty directory
     chmod -R u+w ${buildDir}
@@ -180,7 +180,7 @@ products=${baseProduct}
 if [[ ! -z "${optProducts}" ]]; then
     products=${products},${optProducts}
 fi
-if [ `whoami` = ${user} ]; then
+if [[ `whoami` == ${user} ]]; then
     (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}) >> ${logFile}  2>&1
 else
     (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}") >> ${logFile}  2>&1

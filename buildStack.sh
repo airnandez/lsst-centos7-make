@@ -153,7 +153,7 @@ trace $cmd ; $cmd
 #    10.11  El Capitan
 #    10.12  Sierra
 #
-if [ ${os} == "darwin" ]; then
+if [[ ${os} == "darwin" ]]; then
     export MACOSX_DEPLOYMENT_TARGET="10.9"
 fi
 
@@ -164,7 +164,7 @@ fi
 export TMPDIR=`mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX`
 cmd="bash newinstall.sh -P /usr/bin/python -${pythonVersion} -b -t"
 trace $cmd ; $cmd
-if [ ! -f "loadLSST.bash" ]; then
+if [[ ! -f "loadLSST.bash" ]]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
     exit 1
 fi
@@ -212,16 +212,16 @@ done
 #
 # Perform OS-specific post-installation
 #
-if [ ${os} == "darwin" ]; then
+if [[ ${os} == "darwin" ]]; then
 	#
 	# Update the Python interpreter path of EUPS installed products
 	#
     curl -sSL https://raw.githubusercontent.com/lsst/shebangtron/master/shebangtron | python
-elif [ ${os} == "linux" ]; then
+elif [[ ${os} == "linux" ]]; then
 	#
 	# Extend the loadLSST.*sh scripts to enable devtoolset
 	#
-	if [ -f ${HOME}/enableDevtoolset.sh ]; then
+	if [[ -f ${HOME}/enableDevtoolset.sh ]]; then
 	    for s in loadLSST.*sh; do
 	        grep -v "#" ${HOME}/enableDevtoolset.sh >> $s
 	    done
@@ -270,7 +270,7 @@ trace $cmd ; $cmd
 #
 trace "building archive file"
 tarCmd="tar"
-if [ ${os} == "darwin" ]; then
+if [[ ${os} == "darwin" ]]; then
     tarCmd="gnutar"
 fi
 tarFileName=`echo ${buildDir}-py${pythonVersion}-${os}"-x86_64.tar.gz" | cut -b 2- | tr [/] [_]`
