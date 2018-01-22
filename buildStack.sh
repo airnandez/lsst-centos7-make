@@ -15,7 +15,7 @@
 #                                                                             #
 #    where:                                                                   #
 #        <products> is the comma-separated list of EUPS products to be        #
-#            installed in addition, e.g. "lsst_distrib".
+#            installed, e.g. "lsst_distrib".                                  #
 #                                                                             #
 #        <build directory> is the absolute path of the directory the stack    #
 #            will be built into. This directory must exist and be writable.   #
@@ -26,7 +26,7 @@
 #        <tag> is the tag of the EUPS product to be installed.                #
 #                                                                             #
 #        <python version> version of the Python interpreter to be installed   #
-#            valid values are "2" or "3"
+#            valid values are "2" or "3"                                      #
 #                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
@@ -122,6 +122,10 @@ elif [[ ${tag} =~ ^w_[0-9]{4}_[0-9]{1,2}$ ]]; then
     # The github tag has the form: w.2017.5
     suffix=${tag}
     githubTag=$(printf ${tag} | tr "_" ".")
+elif [[ ${tag} =~ ^sims_.*$ ]]; then
+    # This is a lsst_sims tag.
+    # The suffix will be identical to the tag
+    suffix=${tag}${buildDirExt:+"_${buildDirExt}"}
 else
     echo "${thisScript}: '${tag}' is not a recognized version tag"
     exit 1

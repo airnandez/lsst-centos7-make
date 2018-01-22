@@ -10,12 +10,17 @@
 #    via CernVM-FS or on a local directory.                                   #
 #                                                                             #
 # Usage:                                                                      #
-#    makeStack.sh [-u <user>]  [-d <target directory>]  [-p products]         #
-#                 [-Y <python version>]  [-x <extension>] -t <tag>            #
+#    makeStack.sh [-u <user>]  [-d <target directory>]  [-B <base product>]   #
+#                 [-p products] [-Y <python version>]  [-x <extension>]       #
+#                  -t <tag>                                                   #
 #                                                                             #
 #    where:                                                                   #
 #        <user> is the username which will own the software built.            #
 #            Default: "lsstsw" on linux, current user on OS X                 #
+#                                                                             #
+#        <base product> is the identifier of the base product to install,     #
+#            such as "lsst_distrib" or "lsst_sims".                           #
+#             Default: "lsst_distrib"                                         #
 #                                                                             #
 #        <tag> is the tag, as known by EUPS, of the LSST software to build,   #
 #            such as "v12_1" for a stable version or "w_2016_30" for a weekly #
@@ -26,22 +31,22 @@
 #            the software will be deployed. This script creates subdirectories#
 #            under <target directory> which depends on the tag.               #
 #            For instance, the stack with tag "v12_1" will be installed under #
-#            <target directory>/lsst_distrib/v12_1.
+#            <target directory>/<base product>/v12_1.
 #            If <target directory> does not already exist, this script will   #
 #            create it.                                                       #
 #            Default: "/cvmfs/lsst.in2p3.fr/software/<os>-x86_64" where <os>  #
 #            is either "linux" or "darwin".                                   #
 #                                                                             #
 #        <products> is the comma-separated list of EUPS products to be        #
-#            installed in addition to "lsst_distrib".  "lsst_distrib" is      #
-#            always installed first.                                          #
+#            installed in addition to the base product. The base product      #
+#            is always installed first.                                       #
 #            Default: ""                                                      #
 #                                                                             #
 #        <python version> version of the Python interpreter to be installed   #
 #            valid values are "2" or "3".                                     #
-#            Default: "2"                                                     #
+#            Default: "3"                                                     #
 #                                                                             #
-#        <extension> extension to the name of the build directory, e.g. "py3" #
+#        <extension> extension to the name of the build directory, e.g. "py2" #
 #            Default: ""                                                      #
 #                                                                             #
 # Author:                                                                     #
@@ -70,13 +75,13 @@ buildDirExt=""
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-p <products>] [-Y <python version>] -t <tag>"
+    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-p <products>] [-Y <python version>] -t <tag>"
 } 
 
 #
 # Parse command line arguments
 #
-while getopts d:t:u:p:Y:x: optflag; do
+while getopts d:t:u:B:p:Y:x: optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -86,6 +91,9 @@ while getopts d:t:u:p:Y:x: optflag; do
             ;;
         u)
             user=${OPTARG}
+            ;;
+        B)
+            baseProduct=${OPTARG}
             ;;
         p)
             optProducts=${OPTARG}
@@ -121,6 +129,10 @@ elif [[ ${tag} =~ ^w_[0-9]{4}_[0-9]{1,2}$ ]]; then
     # Add the build directory extension, if any (e.g. "_py3") for a weekly tag
     suffix=${tag}${buildDirExt:+"_${buildDirExt}"}
     githubTag=$(printf ${tag} | tr "_" ".")
+elif [[ ${tag} =~ ^sims_.*$ ]]; then
+    # This is a lsst_sims tag.
+    # The suffix will be identical to the tag
+    suffix=${tag}${buildDirExt:+"_${buildDirExt}"}
 else
     echo "${thisScript}: '${tag}' is not a recognized version tag"
     exit 1
@@ -130,8 +142,8 @@ fi
 # Create the build directory: the build directory depends on the specified target
 # directory. If the target directory is "/cvmfs/...." then the build directory
 # ends like "lsst-v13.0" or "lsst-w2017_10".
-# Otherwise, the build directory ends like "lsst_distrib/v13.0" 
-# or "lsst_distrib/w_2017_10"
+# Otherwise, the build directory ends like "<base product>/v13.0" 
+# or "<base product>/w_2017_10"
 #
 if [[ ${targetDir} == /cvmfs/lsst.in2p3.fr/* ]]; then
     buildDir=${targetDir}/"lsst-"${suffix}

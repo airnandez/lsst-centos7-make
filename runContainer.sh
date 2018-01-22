@@ -8,7 +8,8 @@
 # Usage:                                                                      #
 #                                                                             #
 #    runContainer.sh [-v <host volume>]  [-d <target directory>]  [-i]        #
-#                    [-p products] [-Y <python version>] -t <tag>             #
+#                    [-B <base product>] [-p products] [-Y <python version>]  #
+#                    -t <tag>                                                 #
 #                                                                             #
 #                                                                             #
 #    where:                                                                   #
@@ -36,8 +37,12 @@
 #                                                                             #
 #        -i  run the container in interactive mode.                           #
 #                                                                             #
+#        <base product> is the identifier of the base product to install,     #
+#            such as "lsst_distrib" or "lsst_sims".                           #
+#             Default: "lsst_distrib"                                         #
+#                                                                             #
 #        <products> is the comma-separated list of EUPS products to be        #
-#            installed in addition to "lsst_apps".  "lsst_apps" is always     #
+#            installed in addition to the base product, which is always       #
 #            installed first.                                                 #
 #            Default: ""                                                      #
 #                                                                             #
@@ -56,7 +61,7 @@
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-p <products>] [-x <extension>] -t <tag>"
+    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-B <base product>] [-p <products>] [-x <extension>] -t <tag>"
 } 
 
 #
@@ -78,10 +83,13 @@ interactive=false
 # Python version to install for this product
 pythonVersion="3"
 
+# Default base product to install
+baseProduct="lsst_distrib"
+
 #
 # Parse command line arguments
 #
-while getopts d:t:v:ip:Y: optflag; do
+while getopts d:t:v:ip:B:Y: optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -94,6 +102,9 @@ while getopts d:t:v:ip:Y: optflag; do
             ;;
         i)  
             interactive=true
+            ;;
+        B)
+            baseProduct=${OPTARG}
             ;;
         p)
             optProducts=${OPTARG}
@@ -142,7 +153,7 @@ else
     productsFlag=${optProducts:+"-p ${optProducts}"}
     extFlag=${buildDirExt:+"-x ${buildDirExt}"}
     mode="-d"
-    cmd="/bin/bash makeStack.sh -d ${targetDir} ${productsFlag} -Y ${pythonVersion} ${extFlag} -t ${tag}"
+    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} -Y ${pythonVersion} ${extFlag} -t ${tag}"
 fi
 
 # Set environment variables for the container
@@ -155,9 +166,9 @@ fi
 # Run the container
 imageName="airnandez/lsst-centos7-make"
 containerName=`echo ${imageName} | awk '{split($0,a,"/"); printf "%s", a[2]}'`
-docker run --name ${containerName}-${tag}-py${pythonVersion}  \
-           --volume ${hostVolume}:${containerVolume}          \
-           ${mode}                                            \
-           ${envVars}                                         \
-           ${imageName}                                       \
+docker run --name ${containerName}-${baseProduct}-${tag}-py${pythonVersion}  \
+           --volume ${hostVolume}:${containerVolume}                         \
+           ${mode}                                                           \
+           ${envVars}                                                        \
+           ${imageName}                                                      \
            ${cmd}
