@@ -214,22 +214,31 @@ for p in ${products}; do
 done
 
 #
+# Perform generic post-installation steps
+#
+
+#
+# Update the Python interpreter path of EUPS installed products: we need to Perform
+# this step for both Linux and macOS
+#
+trace "applying shebangtron"
+shebangtron=${TMPDIR}/shebangtron
+curl -sSL -o ${shebangtron} "https://raw.githubusercontent.com/lsst/shebangtron/master/shebangtron"
+if [[ ! -f ${shebangtron} ]]; then
+	echo "${thisScript}: file ${shebangtron} not found"
+	exit 1
+fi
+cmd="python ${shebangtron}"
+trace $cmd; $cmd
+trace "shebangtron finished"
+
+#
 # Perform OS-specific post-installation
 #
 if [[ ${os} == "darwin" ]]; then
 	#
-	# Update the Python interpreter path of EUPS installed products
+	# Put here macOS specific post-installation steps
 	#
-	trace "applying shebangtron"
-	shebangtron=${TMPDIR}/shebangtron
-    curl -sSL -o ${shebangtron} "https://raw.githubusercontent.com/lsst/shebangtron/master/shebangtron"
-    if [[ ! -f ${shebangtron} ]]; then
-    	echo "${thisScript}: file ${shebangtron} not found"
-    	exit 1
-	fi
-    cmd="python ${shebangtron}"
-    trace $cmd; $cmd
-    trace "shebangtron finished"
 elif [[ ${os} == "linux" ]]; then
 	#
 	# Extend the loadLSST.*sh scripts to enable devtoolset
