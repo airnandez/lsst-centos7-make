@@ -235,11 +235,7 @@ trace "shebangtron finished"
 #
 # Perform OS-specific post-installation
 #
-if [[ ${os} == "darwin" ]]; then
-	#
-	# Put here macOS specific post-installation steps
-	#
-elif [[ ${os} == "linux" ]]; then
+if [[ ${os} == "linux" ]]; then
 	#
 	# Extend the loadLSST.*sh scripts to enable devtoolset
 	#
