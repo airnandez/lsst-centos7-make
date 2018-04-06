@@ -57,16 +57,20 @@
 #-----------------------------------------------------------------------------#
 
 #
+# Import functions
+#
+source 'functions.sh'
+
+#
 # Init
 #
 thisScript=`basename $0`
-os=`uname -s | tr [:upper:] [:lower:]`
-if [[ ${os} == "darwin" ]]; then
+user="lsstsw"
+os=$(osName)
+if [[ $os == "darwin" ]]; then
     user=$USER
-else
-    user="lsstsw"
 fi
-targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
+targetDir="/cvmfs/sw.lsst.eu/$(osName)"
 baseProduct="lsst_distrib"
 pythonVersion="3"
 buildDirExt=""
@@ -140,16 +144,9 @@ fi
 
 #
 # Create the build directory: the build directory depends on the specified target
-# directory. If the target directory is "/cvmfs/...." then the build directory
-# ends like "lsst-v13.0" or "lsst-w2017_10".
-# Otherwise, the build directory ends like "<base product>/v13.0" 
-# or "<base product>/w_2017_10"
+# directory. The build directory ends like "lsst_distrib/v13.0" or "lsst_distrib/w_2017_10".
 #
-if [[ ${targetDir} == /cvmfs/lsst.in2p3.fr/* ]]; then
-    buildDir=${targetDir}/"lsst-"${suffix}
-else
-    buildDir=${targetDir}/${baseProduct}/${suffix}
-fi
+buildDir=${targetDir}/${baseProduct}/${suffix}
 if [[ -d ${buildDir} ]]; then
     # Remove build directory if it already exists: newinstall.sh doesn't install
     # in a non-empty directory

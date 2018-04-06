@@ -34,9 +34,8 @@
 #               <target directory>/lsst_distrib/w_2018_14                     #
 #            If <target directory> does not already exist, this script will   #
 #            create it.                                                       #
-#            Default: "/cvmfs/sw.lsst.eu/<os>" where <os> can be either       #
-#            "CentOS", "macOS" or "Ubuntu", depending on the operating system #
-#            and linux distribution.                                          #
+#            Default: "/cvmfs/sw.lsst.eu/<os>-<arch>" where <os> can be       #
+#            "darwin" or "linux" and <arch> will typically be "x86_64"        #
 #                                                                             #
 #        -i  run the container in interactive mode.                           #
 #                                                                             #
@@ -82,7 +81,7 @@ hostVolume="/mnt"
 mkdir -p ${hostVolume}
 
 # Default target directory to build the software in (in container namespace)
-targetDir="/cvmfs/sw.lsst.eu/$(osName)"
+targetDir="/cvmfs/sw.lsst.eu/$(platform)"
 
 # By default, run the container in detached mode
 interactive=false
