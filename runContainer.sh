@@ -57,6 +57,9 @@
 #                                                                             #
 #-----------------------------------------------------------------------------#
 
+# Import functions
+source 'functions.sh'
+
 #
 # usage()
 #
@@ -73,9 +76,8 @@ thisScript=`basename $0`
 hostVolume="/mnt"
 mkdir -p ${hostVolume}
 
-# Target directory to build the software in (in container namespace)
-os=`uname -s | tr [:upper:] [:lower:]`
-targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
+# Default target directory to build the software in (in container namespace)
+targetDir="/cvmfs/sw.lsst.eu/$(osName)"
 
 # By default, run the container in detached mode
 interactive=false
@@ -127,7 +129,7 @@ if [[ ${pythonVersion} != "2" && ${pythonVersion} != "3" ]]; then
 fi
 
 # Path of the in-container volume: we use the first component of the target
-# directory path. For instance, if the target directory is '/cvmfs/lsst.in2p3.fr',
+# directory path. For instance, if the target directory is '/cvmfs/sw.lsst.eu',
 # in the container we mount the volume at '/cvmfs'
 containerVolume=`echo ${targetDir} | awk '{split($0,a,"/"); printf "/%s", a[2]}'`
 
@@ -166,7 +168,7 @@ fi
 # Run the container
 imageName="airnandez/lsst-centos7-make"
 containerName=`echo ${imageName} | awk '{split($0,a,"/"); printf "%s", a[2]}'`
-docker run --name ${containerName}-${baseProduct}-${tag}-py${pythonVersion}  \
+echo docker run --name ${containerName}-${baseProduct}-${tag}-py${pythonVersion}  \
            --volume ${hostVolume}:${containerVolume}                         \
            ${mode}                                                           \
            ${envVars}                                                        \
