@@ -24,16 +24,19 @@
 #            This flag must be provided.                                      #
 #                                                                             #
 #        <target directory> is the absolute path of the directory under which #
-#            the software will be deployed. This script creates a subdirectory#
-#            under <target directory> which depends on the <tag>. If <tag>    #
-#            refers to a stable tag, for instance "v12_1", the subdirectory   #
-#            is named "lsst-v12.1". If <tag> refers to a weekly tag, for      #
-#            instance "w_2016_30", the subdirectory will be named             #
-#            "lsst-w_2016_30".                                                #
+#            the software will be deployed. This script creates subdirectories#
+#            under <target directory> which depend on the <base product>      #
+#            and the <tag>. If <tag> refers to a stable tag of "lsst_distrib" #
+#            and the tag is "v14_1", the subdirectories will be               #
+#               <target directory>/lsst_distrib/v14.1                         #
+#            If the <tag> refers to a weekly release, say "w_2018_14", the    #
+#            the subdirectories will be                                       #
+#               <target directory>/lsst_distrib/w_2018_14                     #
 #            If <target directory> does not already exist, this script will   #
 #            create it.                                                       #
-#            Default: "/cvmfs/lsst.in2p3.fr/software/<os>-x86_64" where <os>  #
-#            is either "linux" or "darwin".                                   #
+#            Default: "/cvmfs/sw.lsst.eu/<os>" where <os> can be either       #
+#            "CentOS", "macOS" or "Ubuntu", depending on the operating system #
+#            and linux distribution.                                          #
 #                                                                             #
 #        -i  run the container in interactive mode.                           #
 #                                                                             #
@@ -57,7 +60,9 @@
 #                                                                             #
 #-----------------------------------------------------------------------------#
 
+#
 # Import functions
+#
 source 'functions.sh'
 
 #
@@ -168,7 +173,7 @@ fi
 # Run the container
 imageName="airnandez/lsst-centos7-make"
 containerName=`echo ${imageName} | awk '{split($0,a,"/"); printf "%s", a[2]}'`
-echo docker run --name ${containerName}-${baseProduct}-${tag}-py${pythonVersion}  \
+docker run --name ${containerName}-${baseProduct}-${tag}-py${pythonVersion}  \
            --volume ${hostVolume}:${containerVolume}                         \
            ${mode}                                                           \
            ${envVars}                                                        \
