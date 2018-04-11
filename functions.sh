@@ -53,7 +53,11 @@ pythonDescription() {
 
 # Returns the description of the C++ compiler, e.g. "c++ (GCC) 6.3.1 20170216 (Red Hat 6.3.1-3)"
 cppDescription() {
-	echo `c++ --version | head -1`
+	local description=`c++ --version | head -1`
+	if [[ ${MACOSX_DEPLOYMENT_TARGET} != "" ]]; then
+		description="${description} [MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET}"]"
+	fi
+	echo ${description}
 }
 
 # Returns a description of the operating system
@@ -63,7 +67,7 @@ osDescription() {
 	local description=""
 	case $(osName) in
 		"darwin")
-    		description=`sw_vers -productName` `sw_vers -productVersion`
+    		description="\"`sw_vers -productName` `sw_vers -productVersion`\""
 			;;
 
 		"linux")

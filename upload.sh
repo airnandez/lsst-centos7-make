@@ -87,8 +87,8 @@ fi
 #
 # Upload the archive file to its destination bucket.
 # We use two buckets: 'stables' for stable versions and 'weeklies' for weekly versions
-# Archive files names with a pattern such as 'w_2017_42' are uploaded to 'weeklies' and
-# archive files named 'v14' are uploaded to 'stables'
+# Archive files names with a pattern such as 'w_2018_14' are uploaded to 'weeklies' and
+# archive files named with a pattern like 'v15' are uploaded to 'stables'
 #
 archiveBasename=`basename ${archiveFile}`
 if [[ ${archiveBasename} =~ \.*v[0-9].*- ]]; then

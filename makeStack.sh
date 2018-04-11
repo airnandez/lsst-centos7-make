@@ -31,10 +31,10 @@
 #            the software will be deployed. This script creates subdirectories#
 #            under <target directory> which depends on the tag.               #
 #            For instance, the stack with tag "v12_1" will be installed under #
-#            <target directory>/<base product>/v12_1.
+#            <target directory>/<base product>/v12_1.                         #
 #            If <target directory> does not already exist, this script will   #
 #            create it.                                                       #
-#            Default: "/cvmfs/lsst.in2p3.fr/software/<os>-x86_64" where <os>  #
+#            Default: "/cvmfs/sw.lsst.eu/<os>-x86_64" where <os>              #
 #            is either "linux" or "darwin".                                   #
 #                                                                             #
 #        <products> is the comma-separated list of EUPS products to be        #
@@ -70,7 +70,7 @@ os=$(osName)
 if [[ $os == "darwin" ]]; then
     user=$USER
 fi
-targetDir="/cvmfs/sw.lsst.eu/$(osName)"
+targetDir="/cvmfs/sw.lsst.eu/$(platform)"
 baseProduct="lsst_distrib"
 pythonVersion="3"
 buildDirExt=""
