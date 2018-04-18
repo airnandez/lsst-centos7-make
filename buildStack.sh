@@ -36,22 +36,22 @@
 #-----------------------------------------------------------------------------#
 
 #
+# Import functions
+#
+source 'functions.sh'
+
+#
 # Init
 #
 thisScript=`basename $0`
 thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 user=`whoami`
-os=`uname -s | tr [:upper:] [:lower:]`
+os=$(osName)
 TMPDIR=${TMPDIR:-/tmp}
 
 #
 # Routines
 #
-trace() {
-    timestamp=`date +"%Y-%m-%d %H:%M:%S"`
-    echo -e $timestamp $*
-}
-
 usage () { 
     echo "Usage: ${thisScript}  -p products  -b <build directory>  -a <archive directory>  -Y <python version> -t <tag>"
 }
@@ -134,7 +134,11 @@ fi
 #
 # Set the environment for building this release
 #
-[[ -f ${HOME}/enableDevtoolset.sh ]] && source ${HOME}/enableDevtoolset.sh
+if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
+    requiredDevToolSet=`scl -l | tail -1`
+    trace "activating ${requiredDevToolSet}"
+    source ${HOME}/enableDevtoolset.bash ${requiredDevToolSet}
+fi
 
 #
 # Download the bootstrap installer from the canonical repository
@@ -156,6 +160,7 @@ trace $cmd ; $cmd
 #    10.10  Yosemite
 #    10.11  El Capitan
 #    10.12  Sierra
+#    10.13  High Sierra
 #
 if [[ ${os} == "darwin" ]]; then
     export MACOSX_DEPLOYMENT_TARGET="10.9"
@@ -166,7 +171,7 @@ fi
 # be a file 'loadLSST.bash'
 #
 export TMPDIR=`mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX`
-cmd="bash newinstall.sh -P /usr/bin/python -${pythonVersion} -b -t"
+cmd="bash newinstall.sh -b -t -${pythonVersion}"
 trace $cmd ; $cmd
 if [[ ! -f "loadLSST.bash" ]]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
@@ -204,6 +209,7 @@ fi
 #
 # Download and build the requested products
 #
+products=`echo ${products} | sed -e 's/,/ /g'`
 for p in ${products}; do
     cmd="eups distrib install -t ${tag} ${p}"
     trace $cmd ; $cmd
@@ -237,35 +243,35 @@ trace "shebangtron finished"
 #
 if [[ ${os} == "linux" ]]; then
 	#
-	# Extend the loadLSST.*sh scripts to enable devtoolset
+	# Extend the loadLSST.bash to enable devtoolset
 	#
-	trace "modifying loadLsst for devtoolset"
-	if [[ -f ${HOME}/enableDevtoolset.sh ]]; then
-	    for s in loadLSST.*sh; do
-	        grep -v "#" ${HOME}/enableDevtoolset.sh >> $s
-	    done
+	trace "modifying loadLSST.bash for devtoolset"
+	if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
+        cp ${HOME}/enableDevtoolset.bash ${buildDir}
+        chmod ugo-x ${buildDir}/enableDevtoolset.bash
+        cat >> loadLSST.bash <<-EOF
+
+# Enable the C++ compiler runtime required by this release, if available (see README.txt for details)
+[[ -f \${LSST_HOME}/enableDevtoolset.bash ]] && source \${LSST_HOME}/enableDevtoolset.bash ${requiredDevToolSet}
+EOF
 	fi
 fi
 
 #
 # Add README file for this version
 #
-trace "creating README"
-if [[ ${os} == "linux" ]]; then
-    platform=`lsb_release -d | cut -f 2-`
-else
-    osxName=`sw_vers -productName`
-    osxVersion=`sw_vers -productVersion`
-    platform="${osxName} ${osxVersion}"
-fi
+trace "creating README.txt"
+cat > ${buildDir}/README.txt <<-EOF
+LSST Software
+-------------
 
-cat > ${buildDir}/README <<-EOF
-LSST Software ${suffix}
------------------------
-
-Build time:     `date -u +"%Y-%m-%d %H:%M:%S UTC"`
-Build platform: ${platform} `uname -s -r -v -m  -p`
-Documentation:  https://github.com/airnandez/lsst-cvmfs
+Product(s):          ${products}
+Tag:                 ${tag}
+Build time:          `date -u +"%Y-%m-%d %H:%M:%S UTC"`
+Build platform:      $(osDescription)
+Python interpreter:  $(pythonDescription)
+C++ compiler:        $(cppDescription)
+Documentation:       https://github.com/airnandez/lsst-cvmfs
 EOF
 
 #
@@ -278,9 +284,18 @@ hooks.config.site.lockDirectoryBase = None
 EOF
 
 #
+# Add .cvmfscatalog when building for distribution via CernVM FS
+#
+if [[ ${buildDir} =~ /cvmfs ]]; then
+    trace "creating .cvmfscatalog file"
+    cmd="touch ${buildDir}/.cvmfscatalog"
+    trace $cmd ; $cmd
+fi
+
+#
 # Change permissions for this installation
 #
-trace "modyfying permissions under ${buildDir}"
+trace "modifying permissions under ${buildDir}"
 cmd="chmod -R u-w,g-w,o-w ${buildDir}"
 trace $cmd ; $cmd
 
@@ -292,7 +307,7 @@ tarCmd="tar"
 if [[ ${os} == "darwin" ]]; then
     tarCmd="gnutar"
 fi
-tarFileName=`echo ${buildDir}-py${pythonVersion}-${os}"-x86_64.tar.gz" | cut -b 2- | tr [/] [_]`
+tarFileName=`echo ${buildDir}-py${pythonVersion}-$(platform).tar.gz | cut -b 2- | sed -e 's|/|__|g'`
 archiveFile=${archiveDir}/${tarFileName}
 cd ${buildDir}/..
 cmd="${tarCmd} --hard-dereference -zcf ${archiveFile} ./`basename ${buildDir}`"

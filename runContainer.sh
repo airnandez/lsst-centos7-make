@@ -24,16 +24,18 @@
 #            This flag must be provided.                                      #
 #                                                                             #
 #        <target directory> is the absolute path of the directory under which #
-#            the software will be deployed. This script creates a subdirectory#
-#            under <target directory> which depends on the <tag>. If <tag>    #
-#            refers to a stable tag, for instance "v12_1", the subdirectory   #
-#            is named "lsst-v12.1". If <tag> refers to a weekly tag, for      #
-#            instance "w_2016_30", the subdirectory will be named             #
-#            "lsst-w_2016_30".                                                #
+#            the software will be deployed. This script creates subdirectories#
+#            under <target directory> which depend on the <base product>      #
+#            and the <tag>. If <tag> refers to a stable tag of "lsst_distrib" #
+#            and the tag is "v14_1", the subdirectories will be               #
+#               <target directory>/lsst_distrib/v14.1                         #
+#            If the <tag> refers to a weekly release, say "w_2018_14", the    #
+#            the subdirectories will be                                       #
+#               <target directory>/lsst_distrib/w_2018_14                     #
 #            If <target directory> does not already exist, this script will   #
 #            create it.                                                       #
-#            Default: "/cvmfs/lsst.in2p3.fr/software/<os>-x86_64" where <os>  #
-#            is either "linux" or "darwin".                                   #
+#            Default: "/cvmfs/sw.lsst.eu/<os>-<arch>" where <os> can be       #
+#            "darwin" or "linux" and <arch> will typically be "x86_64"        #
 #                                                                             #
 #        -i  run the container in interactive mode.                           #
 #                                                                             #
@@ -58,6 +60,11 @@
 #-----------------------------------------------------------------------------#
 
 #
+# Import functions
+#
+source 'functions.sh'
+
+#
 # usage()
 #
 usage () { 
@@ -73,9 +80,8 @@ thisScript=`basename $0`
 hostVolume="/mnt"
 mkdir -p ${hostVolume}
 
-# Target directory to build the software in (in container namespace)
-os=`uname -s | tr [:upper:] [:lower:]`
-targetDir="/cvmfs/lsst.in2p3.fr/software/${os}-x86_64"
+# Default target directory to build the software in (in container namespace)
+targetDir="/cvmfs/sw.lsst.eu/$(platform)"
 
 # By default, run the container in detached mode
 interactive=false
@@ -127,7 +133,7 @@ if [[ ${pythonVersion} != "2" && ${pythonVersion} != "3" ]]; then
 fi
 
 # Path of the in-container volume: we use the first component of the target
-# directory path. For instance, if the target directory is '/cvmfs/lsst.in2p3.fr',
+# directory path. For instance, if the target directory is '/cvmfs/sw.lsst.eu',
 # in the container we mount the volume at '/cvmfs'
 containerVolume=`echo ${targetDir} | awk '{split($0,a,"/"); printf "/%s", a[2]}'`
 
