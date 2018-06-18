@@ -141,12 +141,12 @@ trace "downloading archive file ${bucket}/${archiveName}"
 cmd="rclone copy ${bucket}/${archiveName} ${downloadDir}"
 trace ${cmd}; ${cmd}
 if [[ $? != 0 ]]; then
-	echo "${thisScript}: error downloading archive file"
-	exit 1
+    echo "${thisScript}: error downloading archive file"
+    exit 1
 fi
 if [[ ! -f ${localArchiveFilePath} ]]; then
-	echo "${thisScript}: could not find downloaded archive file ${localArchiveFilePath}"
-	exit 1	
+    echo "${thisScript}: could not find downloaded archive file ${localArchiveFilePath}"
+    exit 1  
 fi
 
 # Untar archive file into a temporary directory
@@ -159,13 +159,13 @@ trace "untaring file ${localArchiveFilePath}"
 trace ${cmd}; ${cmd}
 
 if [[ $? != 0 ]]; then
-	echo "${thisScript}: error untaring file ${localArchiveFilePath}"
-	exit 1
+    echo "${thisScript}: error untaring file ${localArchiveFilePath}"
+    exit 1
 fi
 
 if [[ ! -d ${releaseDir} ]]; then
-	echo "${thisScript}: could not find directory ${releaseDir}"
-	exit 1	
+    echo "${thisScript}: could not find directory ${releaseDir}"
+    exit 1  
 fi
 
 # Start transaction
@@ -189,7 +189,7 @@ fi
 # Change file ownership
 fileOwner="lsstsw"
 if getent passwd ${fileOwner} > /dev/null 2>&1; then
-	cmd="sudo chown -R ${fileOwner}:${fileOwner} ${deployDir}/${platform}/${baseProduct}/${tag}"
+    cmd="sudo chown -R ${fileOwner}:${fileOwner} ${deployDir}/${platform}/${baseProduct}/${tag}"
     trace ${cmd}; ${cmd}
 fi
 
