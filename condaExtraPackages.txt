@@ -10,3 +10,5 @@ ginga
 ipywidgets
 ipyevents
 tqdm
+cmake
+
