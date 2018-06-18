@@ -9,10 +9,10 @@ linuxDescription() {
 	#    Description:	Ubuntu 14.04.5 LTS
 	#    Description:	CentOS Linux release 7.4.1708 (Core) 
 	rel=$(command -v lsb_release)
-	if [[ $rel != "" ]]; then
-		description=`$rel -d | cut -f 2-`
+	if [[ ${rel} != "" ]]; then
+		description=$(${rel} -d | cut -f 2-)
 	elif [[ -f /etc/redhat-release ]]; then
-		description=`head -1 /etc/redhat-release`
+		description=$(head -1 /etc/redhat-release)
 	fi
 	echo $description
 }
@@ -24,17 +24,17 @@ linuxDistribution() {
 	#    Distribution:	Ubuntu 14.04.5 LTS
 	#    Distribution:	CentOS Linux release 7.4.1708 (Core) 
 	rel=$(command -v lsb_release)
-	if [[ $rel != "" ]]; then
-		distrib=`$rel -d | awk '{print $2}'`
+	if [[ ${rel} != "" ]]; then
+		distrib=$(${rel} -d | awk '{print $2}')
 	elif [[ -f /etc/redhat-release ]]; then
-		distrib=`head -1 /etc/redhat-release | awk '{print $1}'`
+		distrib=$(head -1 /etc/redhat-release | awk '{print $1}')
 	fi
 	echo $distrib
 }
 
 # Returns the operating system, e.g. "linux", "darwin"
 osName() {
-	echo `uname -s | tr [:upper:] [:lower:]`
+	echo $(uname -s | tr [:upper:] [:lower:])
 }
 
 # Returns the execution platform, e.g. linux-x86_64, darwin-x86_64
@@ -42,18 +42,18 @@ platform() {
 	# Get the UNIX flavor, e.g. "linux", "darwin"
 	local os=$(osName)
 	# Get the kernel architecture, e.g. "x86_64"
-	local arch=`uname -m | tr [:upper:] [:lower:]`
+	local arch=$(uname -m | tr [:upper:] [:lower:])
 	echo ${os}-${arch}
 }
 
 # Returns the description of the Python interpreter, e.g. "Python 3.6.2 :: Continuum Analytics, Inc."
 pythonDescription() {
-	echo `python --version 2>&1`
+	echo $(python --version 2>&1)
 }
 
 # Returns the description of the C++ compiler, e.g. "c++ (GCC) 6.3.1 20170216 (Red Hat 6.3.1-3)"
 cppDescription() {
-	local description=`c++ --version | head -1`
+	local description=$(c++ --version | head -1)
 	if [[ ${MACOSX_DEPLOYMENT_TARGET} != "" ]]; then
 		description="${description} [MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET}"]"
 	fi
@@ -67,7 +67,7 @@ osDescription() {
 	local description=""
 	case $(osName) in
 		"darwin")
-    		description="\"`sw_vers -productName` `sw_vers -productVersion`\""
+    		description="\"$(sw_vers -productName) $(sw_vers -productVersion)\""
 			;;
 
 		"linux")
@@ -77,11 +77,27 @@ osDescription() {
 		*)
 			;;
 	esac
-	echo ${description} `uname -s -r -v -m  -p`
+	echo ${description} $(uname -s -r -v -m -p)
 }
 
-# Returns a timestamp of the form 2018-01-02 13:14:15"
+# Prints a message prefixed with a time stamp of the form 2018-01-02 13:14:15"
 trace() {
-    timestamp=`date +"%Y-%m-%d %H:%M:%S"`
+    timestamp=$(date -u +"%Y-%m-%d %H:%M:%SZ")
     echo -e $timestamp $*
+}
+
+# Returns true if the argument tag is valid
+isValidTag() {
+	local tag=$1
+	if [[ ${tag} =~ ^v[0-9]+_[0-9]+.*$ ]]; then
+		# Stable version tag of the form 'v12_1' or 'v16_0_rc1'
+		return 0
+ 	elif [[ ${tag} =~ ^w_[0-9]{4}_[0-9]{1,2}$ ]]; then
+    	# Weekly version tag of one of the forms 'w_2017_3' or 'w_2016_15'
+    	return 0
+	elif [[ ${tag} =~ ^sims_.*$ ]]; then
+    	# This is a lsst_sims tag.
+	    return 0
+	fi
+    return 1
 }
