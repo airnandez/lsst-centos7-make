@@ -43,9 +43,9 @@ source 'functions.sh'
 #
 # Init
 #
-thisScript=`basename $0`
+thisScript=$(basename $0)
 thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-user=`whoami`
+user=$(whoami)
 os=$(osName)
 TMPDIR=${TMPDIR:-/tmp}
 
@@ -135,7 +135,7 @@ fi
 # Set the environment for building this release
 #
 if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
-    requiredDevToolSet=`scl -l | tail -1`
+    requiredDevToolSet=$(scl -l | tail -1)
     trace "activating ${requiredDevToolSet}"
     source ${HOME}/enableDevtoolset.bash ${requiredDevToolSet}
 fi
@@ -144,14 +144,14 @@ fi
 # Download the bootstrap installer from the canonical repository
 #
 url="https://raw.githubusercontent.com/lsst/lsst/master/scripts/newinstall.sh"
-status=`curl -s --head  ${url} | head -n 1`
+status=$(curl -s --head  ${url} | head -n 1)
 if [[ ${status} != HTTP*200* ]]; then
     echo "${thisScript}: download installer could not be found at ${url}"
     exit 1
 fi
 cd ${buildDir}
 cmd="curl -s -L -o newinstall.sh ${url}"
-trace "working directory" `pwd`
+trace "working directory" $(pwd)
 trace $cmd ; $cmd
 
 #
@@ -170,7 +170,7 @@ fi
 # Bootstrap the installation. After executing the bootstrap script, there must
 # be a file 'loadLSST.bash'
 #
-export TMPDIR=`mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX`
+export TMPDIR=$(mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX)
 cmd="bash newinstall.sh -b -t -${pythonVersion}"
 trace $cmd ; $cmd
 if [[ ! -f "loadLSST.bash" ]]; then
@@ -209,7 +209,7 @@ fi
 #
 # Download and build the requested products
 #
-products=`echo ${products} | sed -e 's/,/ /g'`
+products=$(echo ${products} | sed -e 's/,/ /g')
 for p in ${products}; do
     cmd="eups distrib install -t ${tag} ${p}"
     trace $cmd ; $cmd
@@ -267,7 +267,7 @@ LSST Software
 
 Product(s):          ${products}
 Tag:                 ${tag}
-Build time:          `date -u +"%Y-%m-%d %H:%M:%S UTC"`
+Build time:          $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 Build platform:      $(osDescription)
 Python interpreter:  $(pythonDescription)
 C++ compiler:        $(cppDescription)
@@ -307,10 +307,10 @@ tarCmd="tar"
 if [[ ${os} == "darwin" ]]; then
     tarCmd="gnutar"
 fi
-tarFileName=`echo ${buildDir}-py${pythonVersion}-$(platform).tar.gz | cut -b 2- | sed -e 's|/|__|g'`
+tarFileName=$(echo ${buildDir}-py${pythonVersion}-$(platform).tar.gz | cut -b 2- | sed -e 's|/|__|g')
 archiveFile=${archiveDir}/${tarFileName}
 cd ${buildDir}/..
-cmd="${tarCmd} --hard-dereference -zcf ${archiveFile} ./`basename ${buildDir}`"
+cmd="${tarCmd} --hard-dereference -zcf ${archiveFile} ./$(basename ${buildDir})"
 trace $cmd ; $cmd
 
 #
