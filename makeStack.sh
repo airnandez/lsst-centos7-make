@@ -64,7 +64,7 @@ source 'functions.sh'
 #
 # Init
 #
-thisScript=`basename $0`
+thisScript=$(basename $0)
 user="lsstsw"
 os=$(osName)
 if [[ $os == "darwin" ]]; then
@@ -189,11 +189,12 @@ products=${baseProduct}
 if [[ ! -z "${optProducts}" ]]; then
     products=${products},${optProducts}
 fi
-if [[ `whoami` == ${user} ]]; then
-    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}) >> ${logFile}  2>&1
+if [[ $(whoami) == ${user} ]]; then
+    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}) < /dev/null  >> ${logFile}  2>&1
+    rc=$?
 else
-    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}") >> ${logFile}  2>&1
+    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}") < /dev/null  >> ${logFile}  2>&1
+    rc=$?
 fi
 
-
-exit 0
+exit ${rc}
