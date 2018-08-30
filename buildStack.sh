@@ -11,7 +11,7 @@
 #                                                                             #
 # Usage:                                                                      #
 #    buildStack.sh -p products  -b <build directory>  -a <archive directory>  #
-#                  -Y <python version>  -t <tag>                              #
+#                  -Y <python version>  [-Z] -t <tag>                         #
 #                                                                             #
 #    where:                                                                   #
 #        <products> is the comma-separated list of EUPS products to be        #
@@ -27,6 +27,9 @@
 #                                                                             #
 #        <python version> version of the Python interpreter to be installed   #
 #            valid values are "2" or "3"                                      #
+#                                                                             #
+#        -Z  allow EUPS to use binary tarballs (if available)                 #
+#                                                                             #
 #                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
@@ -48,12 +51,13 @@ thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 user=$(whoami)
 os=$(osName)
 TMPDIR=${TMPDIR:-/tmp}
+useBinaries=false
 
 #
 # Routines
 #
 usage () { 
-    echo "Usage: ${thisScript}  -p products  -b <build directory>  -a <archive directory>  -Y <python version> -t <tag>"
+    echo "Usage: ${thisScript}  -p products  -b <build directory>  -a <archive directory>  -Y <python version> [-Z] -t <tag>"
 }
 
 # Start execution
@@ -62,7 +66,7 @@ trace "$0" "$*"
 #
 # Parse and verify command line arguments
 #
-while getopts p:b:a:t:Y: optflag; do
+while getopts p:b:a:t:Y:Z optflag; do
     case $optflag in
         p)
             products=${OPTARG//,/ }
@@ -78,6 +82,9 @@ while getopts p:b:a:t:Y: optflag; do
             ;;
         Y)
             pythonVersion=${OPTARG}
+            ;;
+        Z)
+            useBinaries=true
             ;;
     esac
 done
@@ -161,6 +168,7 @@ trace $cmd ; $cmd
 #    10.11  El Capitan
 #    10.12  Sierra
 #    10.13  High Sierra
+#    10.14  Mojave
 #
 if [[ ${os} == "darwin" ]]; then
     export MACOSX_DEPLOYMENT_TARGET="10.9"
@@ -170,8 +178,9 @@ fi
 # Bootstrap the installation. After executing the bootstrap script, there must
 # be a file 'loadLSST.bash'
 #
+[[ ${useBinaries} == true ]] && useTarballsFlag="-t"
 export TMPDIR=$(mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX)
-cmd="bash newinstall.sh -b -t -${pythonVersion}"
+cmd="bash newinstall.sh -b -s ${useTarballsFlag} -${pythonVersion}"
 trace $cmd ; $cmd
 if [[ ! -f "loadLSST.bash" ]]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
