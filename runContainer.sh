@@ -9,7 +9,7 @@
 #                                                                             #
 #    runContainer.sh [-v <host volume>]  [-d <target directory>]  [-i]        #
 #                    [-B <base product>] [-p products] [-Y <python version>]  #
-#                    -t <tag>                                                 #
+#                    [-Z] -t <tag>                                            #
 #                                                                             #
 #                                                                             #
 #    where:                                                                   #
@@ -52,6 +52,9 @@
 #            valid values are "2" or "3".                                     #
 #            Default: "3"                                                     #
 #                                                                             #
+#        -Z  allow EUPS to use binary tarballs (if available)                 #
+#                                                                             #
+#                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
 #    IN2P3 / CNRS computing center                                            #
@@ -68,7 +71,7 @@ source 'functions.sh'
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-B <base product>] [-p <products>] [-x <extension>] -t <tag>"
+    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-B <base product>] [-p <products>] [-x <extension>] [-Z] -t <tag>"
 } 
 
 #
@@ -92,10 +95,13 @@ pythonVersion="3"
 # Default base product to install
 baseProduct="lsst_distrib"
 
+# By default, don't use binary tarballs
+useBinaries=false
+
 #
 # Parse command line arguments
 #
-while getopts d:t:v:ip:B:Y: optflag; do
+while getopts d:t:v:ip:B:Y:Z optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -117,6 +123,9 @@ while getopts d:t:v:ip:B:Y: optflag; do
             ;;
         Y)
             pythonVersion=${OPTARG}
+            ;;
+        Z)
+            useBinaries=true
             ;;
     esac
 done
@@ -159,7 +168,8 @@ else
     productsFlag=${optProducts:+"-p ${optProducts}"}
     extFlag=${buildDirExt:+"-x ${buildDirExt}"}
     mode="-d"
-    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} -Y ${pythonVersion} ${extFlag} -t ${tag}"
+    [[ ${useBinaries} == true ]] && binaryFlag="-Z"
+    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} -Y ${pythonVersion} ${binaryFlag} ${extFlag} -t ${tag}"
 fi
 
 # Set environment variables for the container
