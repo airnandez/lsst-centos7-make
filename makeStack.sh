@@ -12,7 +12,7 @@
 # Usage:                                                                      #
 #    makeStack.sh [-u <user>]  [-d <target directory>]  [-B <base product>]   #
 #                 [-p products] [-Y <python version>]  [-x <extension>]       #
-#                  -t <tag>                                                   #
+#                 [-Z] -t <tag>                                               #
 #                                                                             #
 #    where:                                                                   #
 #        <user> is the username which will own the software built.            #
@@ -49,6 +49,8 @@
 #        <extension> extension to the name of the build directory, e.g. "py2" #
 #            Default: ""                                                      #
 #                                                                             #
+#        -Z  allow EUPS to use binary tarballs (if available)                 #
+#                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
 #    IN2P3 / CNRS computing center                                            #
@@ -74,18 +76,19 @@ targetDir="/cvmfs/sw.lsst.eu/$(platform)"
 baseProduct="lsst_distrib"
 pythonVersion="3"
 buildDirExt=""
+useBinaries=false
 
 #
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-p <products>] [-Y <python version>] -t <tag>"
+    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-p <products>] [-Y <python version>] [-Z] -t <tag>"
 } 
 
 #
 # Parse command line arguments
 #
-while getopts d:t:u:B:p:Y:x: optflag; do
+while getopts d:t:u:B:p:Y:x:Z optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -107,6 +110,9 @@ while getopts d:t:u:B:p:Y:x: optflag; do
             ;;
         x)
             buildDirExt=${OPTARG}
+            ;;
+        Z)
+            useBinaries=true
             ;;
     esac
 done
@@ -189,11 +195,12 @@ products=${baseProduct}
 if [[ ! -z "${optProducts}" ]]; then
     products=${products},${optProducts}
 fi
+[[ ${useBinaries} == true ]] && binaryFlag="-Z"
 if [[ $(whoami) == ${user} ]]; then
-    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}) < /dev/null  >> ${logFile}  2>&1
+    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} ${binaryFlag} -t ${tag}) < /dev/null  >> ${logFile}  2>&1
     rc=$?
 else
-    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} -t ${tag}") < /dev/null  >> ${logFile}  2>&1
+    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} ${binaryFlag} -t ${tag}") < /dev/null  >> ${logFile}  2>&1
     rc=$?
 fi
 
