@@ -240,8 +240,8 @@ trace "applying shebangtron"
 shebangtron=${TMPDIR}/shebangtron
 curl -sSL -o ${shebangtron} "https://raw.githubusercontent.com/lsst/shebangtron/master/shebangtron"
 if [[ ! -f ${shebangtron} ]]; then
-	echo "${thisScript}: file ${shebangtron} not found"
-	exit 1
+    echo "${thisScript}: file ${shebangtron} not found"
+    exit 1
 fi
 cmd="python ${shebangtron}"
 trace $cmd; $cmd
@@ -251,11 +251,11 @@ trace "shebangtron finished"
 # Perform OS-specific post-installation
 #
 if [[ ${os} == "linux" ]]; then
-	#
-	# Extend the loadLSST.bash to enable devtoolset
-	#
-	trace "modifying loadLSST.bash for devtoolset"
-	if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
+    #
+    # Extend the loadLSST.bash to enable devtoolset
+    #
+    trace "modifying loadLSST.bash for devtoolset"
+    if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
         cp ${HOME}/enableDevtoolset.bash ${buildDir}
         chmod ugo-x ${buildDir}/enableDevtoolset.bash
         cat >> loadLSST.bash <<-EOF
@@ -263,7 +263,7 @@ if [[ ${os} == "linux" ]]; then
 # Enable the C++ compiler runtime required by this release, if available (see README.txt for details)
 [[ -f \${LSST_HOME}/enableDevtoolset.bash ]] && source \${LSST_HOME}/enableDevtoolset.bash ${requiredDevToolSet}
 EOF
-	fi
+    fi
 fi
 
 #
