@@ -167,7 +167,7 @@ if [ "${interactive}" == true ]; then
 else
     productsFlag=${optProducts:+"-p ${optProducts}"}
     extFlag=${buildDirExt:+"-x ${buildDirExt}"}
-    mode="-d"
+    mode="-d  --rm"
     [[ ${useBinaries} == true ]] && binaryFlag="-Z"
     cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} -Y ${pythonVersion} ${binaryFlag} ${extFlag} -t ${tag}"
 fi
