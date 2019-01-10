@@ -177,6 +177,17 @@ if [[ $? != 0 ]]; then
 fi
 
 # Copy this release to its destination directory
+if [[ ! -d ${deployDir}/${platform}/${baseProduct} ]]; then
+   cmd="sudo mkdir -p ${deployDir}/${platform}/${baseProduct}"
+   trace ${cmd}; ${cmd}
+   if [[ $? != 0 ]]; then
+       echo "${thisScript}: could not create base product directory"
+       cmd="sudo cvmfs_server abort -f ${cvmfsRepoName}"
+       trace ${cmd}; ${cmd}
+       exit 1
+   fi
+fi
+
 cmd="sudo cp -pR ${releaseDir}  ${deployDir}/${platform}/${baseProduct}"
 trace ${cmd}; ${cmd}
 if [[ $? != 0 ]]; then
@@ -189,6 +200,8 @@ fi
 # Change file ownership
 fileOwner="lsstsw"
 if getent passwd ${fileOwner} > /dev/null 2>&1; then
+    cmd="sudo chown ${fileOwner}:${fileOwner} ${deployDir}/${platform}/${baseProduct}"
+    trace ${cmd}; ${cmd}
     cmd="sudo chown -R ${fileOwner}:${fileOwner} ${deployDir}/${platform}/${baseProduct}/${tag}"
     trace ${cmd}; ${cmd}
 fi
@@ -209,3 +222,4 @@ cmd="sudo rm -rf ${untarDir} ${downloadDir}"
 trace ${cmd}; ${cmd}
 
 exit 0
+
