@@ -11,4 +11,7 @@ ipywidgets
 ipyevents
 tqdm
 cmake
+nb_conda_kernels
+numba
+dask
 
