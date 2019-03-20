@@ -321,6 +321,10 @@ archiveFile=${archiveDir}/${tarFileName}
 cd ${buildDir}/..
 cmd="${tarCmd} --hard-dereference -zcf ${archiveFile} ./$(basename ${buildDir})"
 trace $cmd ; $cmd
+if [ $? != 0 ]; then
+    echo "${thisScript}: error creating archive ${archiveFile}"
+    exit 1
+fi
 
 #
 # Upload archive file
