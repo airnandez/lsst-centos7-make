@@ -280,6 +280,7 @@ Build time:          $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 Build platform:      $(osDescription)
 Python interpreter:  $(pythonDescription)
 C++ compiler:        $(cppDescription)
+Conda:               $(conda --version)
 Documentation:       https://sw.lsst.eu
 EOF
 
