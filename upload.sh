@@ -1,6 +1,11 @@
 #!/bin/bash 
 
 #
+# Import functions
+#
+source 'functions.sh'
+
+#
 # Init
 #
 thisScript=$(basename $0)
@@ -102,7 +107,8 @@ else
     destination="${bucket}/py2"
 fi
 
-${rcloneExe} -I --config ${rcloneConfFile} copy ${archiveFile} ${destination}
+cmd="${rcloneExe} -I --config ${rcloneConfFile} copy ${archiveFile} ${destination}"
+trace $cmd ; $cmd
 rc=$?
 
 #
