@@ -9,7 +9,7 @@
 #                                                                             #
 #    runContainer.sh [-v <host volume>]  [-d <target directory>]  [-i]        #
 #                    [-B <base product>] [-p products] [-Y <python version>]  #
-#                    [-Z] -t <tag>                                            #
+#                    [-Z] [-X] -t <tag>                                       #
 #                                                                             #
 #                                                                             #
 #    where:                                                                   #
@@ -54,6 +54,7 @@
 #                                                                             #
 #        -Z  allow EUPS to use binary tarballs (if available)                 #
 #                                                                             #
+#        -X  mark the build directory as experimental                         #
 #                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
@@ -71,7 +72,7 @@ source 'functions.sh'
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-B <base product>] [-p <products>] [-x <extension>] [-Z] -t <tag>"
+    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-B <base product>] [-p <products>] [-x <extension>] [-Z] [-X] -t <tag>"
 } 
 
 #
@@ -98,10 +99,13 @@ baseProduct="lsst_distrib"
 # By default, don't use binary tarballs
 useBinaries=false
 
+# Is this a build for an experimental version?
+isExperimental=false
+
 #
 # Parse command line arguments
 #
-while getopts d:t:v:ip:B:Y:Z optflag; do
+while getopts d:t:v:ip:B:Y:ZX optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -126,6 +130,9 @@ while getopts d:t:v:ip:B:Y:Z optflag; do
             ;;
         Z)
             useBinaries=true
+            ;;
+        X)
+            isExperimental=true
             ;;
     esac
 done
@@ -154,22 +161,15 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
-# Add a 'py2' extension to the name of the build directory if we are installing
-# for Python 2. By default we use Python 3 without extension in the directory name
-buildDirExt=""
-if [[ ${pythonVersion} == "2" ]]; then
-    buildDirExt="py2"
-fi
-
 if [ "${interactive}" == true ]; then
     mode="-it"
     cmd="/bin/bash"
 else
     productsFlag=${optProducts:+"-p ${optProducts}"}
-    extFlag=${buildDirExt:+"-x ${buildDirExt}"}
     mode="-d  --rm"
     [[ ${useBinaries} == true ]] && binaryFlag="-Z"
-    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} -Y ${pythonVersion} ${binaryFlag} ${extFlag} -t ${tag}"
+    [[ ${isExperimental} == true ]] && experimentalFlag="-X"
+    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} -Y ${pythonVersion} ${binaryFlag} ${experimentalFlag} -t ${tag}"
 fi
 
 # Set environment variables for the container
