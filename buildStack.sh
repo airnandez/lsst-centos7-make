@@ -30,7 +30,6 @@
 #                                                                             #
 #        -Z  allow EUPS to use binary tarballs (if available)                 #
 #                                                                             #
-#                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
 #    IN2P3 / CNRS computing center                                            #
@@ -122,17 +121,15 @@ if [[ ${tag} =~ ^v[0-9]+_[0-9]+.*$ ]]; then
     # Stable version tag of the form 'v12_1'
     # The suffix will be of the form 'v12.1'
     suffix=${tag//_/.}
-    githubTag=$(printf ${tag} | tr "_" "." | sed "s/^v//")
 elif [[ ${tag} =~ ^w_[0-9]{4}_[0-9]{1,2}$ ]]; then
     # Weekly version tag of one of the forms 'w_2017_3' or 'w_2016_15'
     # The suffix will be identical to the weekly tag
     # The github tag has the form: w.2017.5
     suffix=${tag}
-    githubTag=$(printf ${tag} | tr "_" ".")
 elif [[ ${tag} =~ ^sims_.*$ ]]; then
     # This is a lsst_sims tag.
     # The suffix will be identical to the tag
-    suffix=${tag}${buildDirExt:+"_${buildDirExt}"}
+    suffix=${tag}
 else
     echo "${thisScript}: '${tag}' is not a recognized version tag"
     exit 1

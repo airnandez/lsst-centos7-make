@@ -51,6 +51,8 @@
 #                                                                             #
 #        -Z  allow EUPS to use binary tarballs (if available)                 #
 #                                                                             #
+#        -X  mark the build directory as experimental                         #          
+#                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
 #    IN2P3 / CNRS computing center                                            #
@@ -75,20 +77,21 @@ fi
 targetDir="/cvmfs/sw.lsst.eu/$(platform)"
 baseProduct="lsst_distrib"
 pythonVersion="3"
-buildDirExt=""
 useBinaries=false
+isExperimental=false
+experimentalExt="dev"
 
 #
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-p <products>] [-Y <python version>] [-Z] -t <tag>"
+    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-p <products>] [-Y <python version>] [-Z] [-X] -t <tag>"
 } 
 
 #
 # Parse command line arguments
 #
-while getopts d:t:u:B:p:Y:x:Z optflag; do
+while getopts d:t:u:B:p:Y:x:ZX optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -108,11 +111,11 @@ while getopts d:t:u:B:p:Y:x:Z optflag; do
         Y)
             pythonVersion=${OPTARG}
             ;;
-        x)
-            buildDirExt=${OPTARG}
-            ;;
         Z)
             useBinaries=true
+            ;;
+        X)
+            isExperimental=true
             ;;
     esac
 done
@@ -124,35 +127,33 @@ if [[ -z "${tag}" ]]; then
 fi
 
 #
-# Is the provided tag a stable version or a weekly version?
+# Is the provided tag a stable release or a weekly release?
 #
 if [[ ${tag} =~ ^v[0-9]+_[0-9]+.*$ ]]; then
-    # Stable version tag of the form 'v12_1'
-    # The suffix will be of the form 'v12.1'
-    # Add the build directory extension, if any (e.g. ".py3") for a stable tag
-    suffix=${tag//_/.}${buildDirExt:+".${buildDirExt}"}
-    githubTag=$(printf ${tag} | tr "_" "." | sed "s/^v//")
+    # Stable release tag of the form 'v12_1'
+    # The name of the release directory will be of the form 'v12.1'
+    releaseDir=${tag//_/.}
 elif [[ ${tag} =~ ^w_[0-9]{4}_[0-9]{1,2}$ ]]; then
-    # Weekly version tag of one of the forms 'w_2017_3' or 'w_2016_15'
-    # The suffix will be identical to the weekly tag
-    # The github tag has the form: w.2017.5
-    # Add the build directory extension, if any (e.g. "_py3") for a weekly tag
-    suffix=${tag}${buildDirExt:+"_${buildDirExt}"}
-    githubTag=$(printf ${tag} | tr "_" ".")
+    # Weekly release tag of one of the forms 'w_2017_3' or 'w_2016_15'
+    # The name of the release directory will be identical to the weekly tag
+    releaseDir=${tag}
 elif [[ ${tag} =~ ^sims_.*$ ]]; then
     # This is a lsst_sims tag.
-    # The suffix will be identical to the tag
-    suffix=${tag}${buildDirExt:+"_${buildDirExt}"}
+    # The name of the release directory will be identical to the tag
+    releaseDir=${tag}
 else
     echo "${thisScript}: '${tag}' is not a recognized version tag"
     exit 1
 fi
 
+# If this is a build for an experimental release add a marker to the directory
+[[ ${isExperimental} == true ]] && releaseDir="${releaseDir}-${experimentalExt}"
+
 #
 # Create the build directory: the build directory depends on the specified target
 # directory. The build directory ends like "lsst_distrib/v13.0" or "lsst_distrib/w_2017_10".
 #
-buildDir=${targetDir}/${baseProduct}/${suffix}
+buildDir=${targetDir}/${baseProduct}/${releaseDir}
 if [[ -d ${buildDir} ]]; then
     # Remove build directory if it already exists: newinstall.sh doesn't install
     # in a non-empty directory
@@ -180,6 +181,9 @@ mkdir -p ${archiveDir}
 logDir=${targetDir}/"log"
 mkdir -p ${logDir}
 logFile=${logDir}/${baseProduct}-${tag}-py${pythonVersion}.log
+if [[ ${isExperimental} == true ]]; then
+   logFile=${logDir}/${baseProduct}-${tag}-${experimentalExt}-py${pythonVersion}.log
+fi
 rm -rf ${logFile}
 touch ${logFile}
 
