@@ -3,8 +3,8 @@
 #
 # Init
 #
-thisScript=`basename $0`
-os=`uname -s | tr [:upper:] [:lower:]`
+thisScript=$(basename $0)
+os=$(uname -s | tr [:upper:] [:lower:])
 
 usage () { 
     echo "Usage: ${thisScript} <archive file>"
@@ -35,13 +35,13 @@ fi
 #
 # Prepare temporary directory
 #
-USER=${USER:-`id -un`}
+USER=${USER:-$(id -un)}
 TMPDIR=${TMPDIR:-"/tmp"}
 mkdir -p ${TMPDIR}
 if [ ${os} == "darwin" ]; then
-    TMPDIR=`mktemp -d ${TMPDIR}/${USER}.upload.XXXXX`
+    TMPDIR=$(mktemp -d ${TMPDIR}/${USER}.upload.XXXXX)
 else
-    TMPDIR=`mktemp -d -p ${TMPDIR} ${USER}.upload.XXXXX`
+    TMPDIR=$(mktemp -d -p ${TMPDIR} ${USER}.upload.XXXXX)
 fi
 
 #
@@ -65,7 +65,7 @@ fi
 unzipDir=${TMPDIR}/rclone
 rm -rf ${unzipDir}
 unzip -qq -d ${unzipDir} ${rcloneZipFile}
-rcloneExe=`find ${unzipDir} -name rclone -type f -print`
+rcloneExe=$(find ${unzipDir} -name rclone -type f -print)
 if [[ ! -f ${rcloneExe} ]]; then
     echo "${thisScript}: could not find rclone executable at ${rcloneExe}"
     exit 1
@@ -90,7 +90,7 @@ fi
 # Archive files names with a pattern such as 'w_2018_14' are uploaded to 'weeklies' and
 # archive files named with a pattern like 'v15' are uploaded to 'stables'
 #
-archiveBasename=`basename ${archiveFile}`
+archiveBasename=$(basename ${archiveFile})
 if [[ ${archiveBasename} =~ \.*v[0-9].*- ]]; then
     bucket="cc:stables"
 else
@@ -102,7 +102,9 @@ else
     destination="${bucket}/py2"
 fi
 
-${rcloneExe} -I --config ${rcloneConfFile} copy ${archiveFile} ${destination}
+cmd="${rcloneExe} -I --config ${rcloneConfFile} copy ${archiveFile} ${destination}"
+echo $cmd
+$cmd
 rc=$?
 
 #
