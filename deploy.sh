@@ -43,7 +43,7 @@ source 'functions.sh'
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-B <base product>] [-d <deploy dir>] [-a <architecture>] -S <platform>  -t <tag>"
+    echo "Usage: ${thisScript} [-B <base product>] [-d <deploy dir>] [-a <architecture>] [-X] -S <platform>  -t <tag>"
 } 
 
 #
@@ -63,10 +63,14 @@ deployDir="/cvmfs/${cvmfsRepoName}"
 # Default kernel architecture
 arch="x86_64"
 
+# Experimental version?
+isExperimental=false
+experimentalExt="dev"
+
 #
 # Parse command line arguments
 #
-while getopts B:d:a:S:t: optflag; do
+while getopts B:d:a:S:t:X optflag; do
     case $optflag in
         B)
             baseProduct=${OPTARG}
@@ -79,6 +83,9 @@ while getopts B:d:a:S:t: optflag; do
             ;;
         a)
             arch=${OPTARG}
+            ;;
+        X)
+            isExperimental=true
             ;;
         t)
             tag=${OPTARG}
@@ -125,13 +132,18 @@ elif [[ ${tag} =~ ^sims_ ]]; then
     bucket="cc:weeklies/py3"
 fi
 targetDir=${deployDir}/${platform}/${baseProduct}/${tag}
+[[ ${isExperimental} == true ]] && targetDir="${targetDir}-${experimentalExt}"
 if [[ -d ${targetDir} ]]; then
     echo "${thisScript}: directory \"${targetDir}\" already exists. Remove it before deploying"
     exit 1
 fi
 
 # Prepare download directory and download the archive for the specified tag and platform
-archiveName=$(echo ${deployDir}/${platform}/${baseProduct}/${tag}"-py3-"${platform}".tar.gz" | cut -b 2- | sed -e 's|/|__|g')
+archiveName="${deployDir}/${platform}/${baseProduct}/${tag}-py3-${platform}.tar.gz"
+if [[ ${isExperimental} == true ]]; then
+   archiveName="${deployDir}/${platform}/${baseProduct}/${tag}-${experimentalExt}-py3-${platform}.tar.gz"
+fi
+archiveName=$(echo ${archiveName} | cut -b 2- | sed -e 's|/|__|g')
 workDir='/cvmfs/tmp'
 downloadDir=${workDir}/download
 mkdir -p ${downloadDir}
@@ -153,6 +165,7 @@ fi
 untarDir=${workDir}/${platform}
 mkdir -p ${untarDir}
 releaseDir=${untarDir}/${tag}
+[[ ${isExperimental} == true ]] && releaseDir="${releaseDir}-${experimentalExt}"
 sudo rm -rf ${releaseDir}
 cmd="tar --directory ${untarDir} -zxf ${localArchiveFilePath}"
 trace "untaring file ${localArchiveFilePath}"
@@ -177,21 +190,22 @@ if [[ $? != 0 ]]; then
 fi
 
 # Copy this release to its destination directory
-if [[ ! -d ${deployDir}/${platform}/${baseProduct} ]]; then
-   cmd="sudo mkdir -p ${deployDir}/${platform}/${baseProduct}"
+baseProductDir=$(dirname ${targetDir})
+if [[ ! -d ${baseProductDir} ]]; then
+   cmd="sudo mkdir -p ${baseProductDir}"
    trace ${cmd}; ${cmd}
    if [[ $? != 0 ]]; then
-       echo "${thisScript}: could not create base product directory"
+       echo "${thisScript}: could not create base product directory ${baseProductDir}"
        cmd="sudo cvmfs_server abort -f ${cvmfsRepoName}"
        trace ${cmd}; ${cmd}
        exit 1
    fi
 fi
 
-cmd="sudo cp -pR ${releaseDir}  ${deployDir}/${platform}/${baseProduct}"
+cmd="sudo cp -pR ${releaseDir} ${baseProductDir}"
 trace ${cmd}; ${cmd}
 if [[ $? != 0 ]]; then
-    echo "${thisScript}: could not copy release to its destination directory"
+    echo "${thisScript}: could not copy release to its destination directory ${baseProductDir}"
     cmd="sudo cvmfs_server abort -f ${cvmfsRepoName}"
     trace ${cmd}; ${cmd}
     exit 1
@@ -200,9 +214,9 @@ fi
 # Change file ownership
 fileOwner="lsstsw"
 if getent passwd ${fileOwner} > /dev/null 2>&1; then
-    cmd="sudo chown ${fileOwner}:${fileOwner} ${deployDir}/${platform}/${baseProduct}"
+    cmd="sudo chown ${fileOwner}:${fileOwner} ${baseProductDir}"
     trace ${cmd}; ${cmd}
-    cmd="sudo chown -R ${fileOwner}:${fileOwner} ${deployDir}/${platform}/${baseProduct}/${tag}"
+    cmd="sudo chown -R ${fileOwner}:${fileOwner} ${targetDir}"
     trace ${cmd}; ${cmd}
 fi
 
@@ -222,4 +236,3 @@ cmd="sudo rm -rf ${untarDir} ${downloadDir}"
 trace ${cmd}; ${cmd}
 
 exit 0
-
