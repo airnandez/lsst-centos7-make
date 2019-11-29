@@ -49,7 +49,7 @@ RUN yum install -q -y \
 #
 RUN yum install -q -y redhat-lsb unzip
 RUN yum install -q -y centos-release-scl
-RUN yum install -q -y devtoolset-6
+RUN yum install -q -y devtoolset-8
 
 #
 # Create non-privileged user
