@@ -14,4 +14,4 @@ cmake
 nb_conda_kernels
 numba
 dask
-
+dask-jobqueue
