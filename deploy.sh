@@ -235,4 +235,5 @@ trace "cleaning up"
 cmd="sudo rm -rf ${untarDir} ${downloadDir}"
 trace ${cmd}; ${cmd}
 
+trace "done"
 exit 0
