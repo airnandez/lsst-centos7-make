@@ -138,7 +138,11 @@ fi
 #
 # Set the environment for building this release
 #
-if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
+# From w_2020_18 the compilers needed for building and running lsst_distrib
+# are included in the conda distribution, so we don't need a devtoolset
+# TODO: disable/enable the devtools in a more dynamic way
+doEnableDevTools=false
+if [[ ${doEnableDevTools} = true && -f ${HOME}/enableDevtoolset.bash ]]; then
     requiredDevToolSet=$(scl -l | tail -1)
     trace "activating ${requiredDevToolSet}"
     source ${HOME}/enableDevtoolset.bash ${requiredDevToolSet}
@@ -249,18 +253,20 @@ trace "shebangtron finished"
 #
 if [[ ${os} == "linux" ]]; then
     #
-    # Extend the loadLSST.bash to enable devtoolset
+    # Extend the loadLSST.bash to enable devtoolset if necessary
     #
-    trace "modifying loadLSST.bash for devtoolset"
-    if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
-        cp ${HOME}/enableDevtoolset.bash ${buildDir}
-        chmod ugo-x ${buildDir}/enableDevtoolset.bash
-        cat >> loadLSST.bash <<-EOF
+    if [[ ${doEnableDevTools} = true ]]; then
+	    trace "modifying loadLSST.bash for devtoolset"
+	    if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
+	        cp ${HOME}/enableDevtoolset.bash ${buildDir}
+	        chmod ugo-x ${buildDir}/enableDevtoolset.bash
+	        cat >> loadLSST.bash <<-EOF
 
 # Enable the C++ compiler runtime required by this release, if available (see README.txt for details)
 [[ -f \${LSST_HOME}/enableDevtoolset.bash ]] && source \${LSST_HOME}/enableDevtoolset.bash ${requiredDevToolSet}
 EOF
-    fi
+	   fi
+	fi
 fi
 
 #
