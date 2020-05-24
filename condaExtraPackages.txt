@@ -6,12 +6,12 @@
 ipython
 jupyter
 jupyterlab
-ginga
 ipywidgets
 ipyevents
 tqdm
-cmake
 nb_conda_kernels
 numba
 dask
 dask-jobqueue
+postgresql
+psycopg2
