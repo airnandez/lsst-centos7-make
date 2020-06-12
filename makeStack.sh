@@ -11,8 +11,8 @@
 #                                                                             #
 # Usage:                                                                      #
 #    makeStack.sh [-u <user>]  [-d <target directory>]  [-B <base product>]   #
-#                 [-p products] [-Y <python version>]  [-x <extension>]       #
-#                 [-Z] -t <tag>                                               #
+#                 [-p products] [-x <extension>] [-Z] -t <tag>                #
+#                                                                             #
 #                                                                             #
 #    where:                                                                   #
 #        <user> is the username which will own the software built.            #
@@ -41,10 +41,6 @@
 #            installed in addition to the base product. The base product      #
 #            is always installed first.                                       #
 #            Default: ""                                                      #
-#                                                                             #
-#        <python version> version of the Python interpreter to be installed   #
-#            valid values are "2" or "3".                                     #
-#            Default: "3"                                                     #
 #                                                                             #
 #        <extension> extension to the name of the build directory, e.g. "py2" #
 #            Default: ""                                                      #
@@ -76,7 +72,6 @@ if [[ $os == "darwin" ]]; then
 fi
 targetDir="/cvmfs/sw.lsst.eu/$(platform)"
 baseProduct="lsst_distrib"
-pythonVersion="3"
 useBinaries=false
 isExperimental=false
 experimentalExt="dev"
@@ -91,7 +86,7 @@ usage () {
 #
 # Parse command line arguments
 #
-while getopts d:t:u:B:p:Y:x:ZX optflag; do
+while getopts d:t:u:B:p:x:ZX optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -107,9 +102,6 @@ while getopts d:t:u:B:p:Y:x:ZX optflag; do
             ;;
         p)
             optProducts=${OPTARG}
-            ;;
-        Y)
-            pythonVersion=${OPTARG}
             ;;
         Z)
             useBinaries=true
@@ -180,9 +172,9 @@ mkdir -p ${archiveDir}
 #
 logDir=${targetDir}/"log"
 mkdir -p ${logDir}
-logFile=${logDir}/${baseProduct}-${tag}-py${pythonVersion}.log
+logFile=${logDir}/${baseProduct}-${tag}.log
 if [[ ${isExperimental} == true ]]; then
-   logFile=${logDir}/${baseProduct}-${tag}-${experimentalExt}-py${pythonVersion}.log
+   logFile=${logDir}/${baseProduct}-${tag}-${experimentalExt}.log
 fi
 rm -rf ${logFile}
 touch ${logFile}
@@ -201,10 +193,10 @@ if [[ ! -z "${optProducts}" ]]; then
 fi
 [[ ${useBinaries} == true ]] && binaryFlag="-Z"
 if [[ $(whoami) == ${user} ]]; then
-    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} ${binaryFlag} -t ${tag}) < /dev/null  >> ${logFile}  2>&1
+    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} ${binaryFlag} -t ${tag}) < /dev/null  >> ${logFile}  2>&1
     rc=$?
 else
-    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} -Y ${pythonVersion} ${binaryFlag} -t ${tag}") < /dev/null  >> ${logFile}  2>&1
+    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} ${binaryFlag} -t ${tag}") < /dev/null  >> ${logFile}  2>&1
     rc=$?
 fi
 

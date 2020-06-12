@@ -8,9 +8,7 @@
 # Usage:                                                                      #
 #                                                                             #
 #    runContainer.sh [-v <host volume>]  [-d <target directory>]  [-i]        #
-#                    [-B <base product>] [-p products] [-Y <python version>]  #
-#                    [-Z] [-X] -t <tag>                                       #
-#                                                                             #
+#                    [-B <base product>] [-p products] [-Z] [-X] -t <tag>     #
 #                                                                             #
 #    where:                                                                   #
 #        <host volume> is the storage volume in the host where the container  #
@@ -47,10 +45,6 @@
 #            installed in addition to the base product, which is always       #
 #            installed first.                                                 #
 #            Default: ""                                                      #
-#                                                                             #
-#        <python version> version of the Python interpreter to be installed   #
-#            valid values are "2" or "3".                                     #
-#            Default: "3"                                                     #
 #                                                                             #
 #        -Z  allow EUPS to use binary tarballs (if available)                 #
 #                                                                             #
@@ -90,9 +84,6 @@ targetDir="/cvmfs/sw.lsst.eu/$(platform)"
 # By default, run the container in detached mode
 interactive=false
 
-# Python version to install for this product
-pythonVersion="3"
-
 # Default base product to install
 baseProduct="lsst_distrib"
 
@@ -105,7 +96,7 @@ isExperimental=false
 #
 # Parse command line arguments
 #
-while getopts d:t:v:ip:B:Y:ZX optflag; do
+while getopts d:t:v:ip:B:ZX optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -125,9 +116,6 @@ while getopts d:t:v:ip:B:Y:ZX optflag; do
         p)
             optProducts=${OPTARG}
             ;;
-        Y)
-            pythonVersion=${OPTARG}
-            ;;
         Z)
             useBinaries=true
             ;;
@@ -141,11 +129,6 @@ shift $((OPTIND - 1))
 if [[ -z "${tag}" ]]; then
     usage
     exit 0
-fi
-
-if [[ ${pythonVersion} != "2" && ${pythonVersion} != "3" ]]; then
-    echo "${thisScript}: invalid Python version \"${pythonVersion}\" - expecting 2 or 3"
-    exit 1
 fi
 
 # Path of the in-container volume: we use the first component of the target
@@ -169,7 +152,7 @@ else
     mode="-d  --rm"
     [[ ${useBinaries} == true ]] && binaryFlag="-Z"
     [[ ${isExperimental} == true ]] && experimentalFlag="-X"
-    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} -Y ${pythonVersion} ${binaryFlag} ${experimentalFlag} -t ${tag}"
+    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} ${binaryFlag} ${experimentalFlag} -t ${tag}"
 fi
 
 # Set environment variables for the container
@@ -182,9 +165,9 @@ fi
 # Run the container
 imageName="airnandez/lsst-centos7-make"
 containerName=`echo ${imageName} | awk '{split($0,a,"/"); printf "%s", a[2]}'`
-docker run --name ${containerName}-${baseProduct}-${tag}-py${pythonVersion}  \
-           --volume ${hostVolume}:${containerVolume}                         \
-           ${mode}                                                           \
-           ${envVars}                                                        \
-           ${imageName}                                                      \
+docker run --name ${containerName}-${baseProduct}-${tag}  \
+           --volume ${hostVolume}:${containerVolume}      \
+           ${mode}                                        \
+           ${envVars}                                     \
+           ${imageName}                                   \
            ${cmd}

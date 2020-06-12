@@ -11,7 +11,7 @@
 #                                                                             #
 # Usage:                                                                      #
 #    buildStack.sh -p products  -b <build directory>  -a <archive directory>  #
-#                  -Y <python version>  [-Z] -t <tag>                         #
+#                  [-Z] -t <tag>                                              #
 #                                                                             #
 #    where:                                                                   #
 #        <products> is the comma-separated list of EUPS products to be        #
@@ -24,9 +24,6 @@
 #            an archive file (.tar.gz) of the stack just built.               #
 #                                                                             #
 #        <tag> is the tag of the EUPS product to be installed.                #
-#                                                                             #
-#        <python version> version of the Python interpreter to be installed   #
-#            valid values are "2" or "3"                                      #
 #                                                                             #
 #        -Z  allow EUPS to use binary tarballs (if available)                 #
 #                                                                             #
@@ -51,6 +48,7 @@ user=$(whoami)
 os=$(osName)
 TMPDIR=${TMPDIR:-/tmp}
 useBinaries=false
+pythonVersion="3"
 
 #
 # Routines
@@ -65,7 +63,7 @@ trace "$0" "$*"
 #
 # Parse and verify command line arguments
 #
-while getopts p:b:a:t:Y:Z optflag; do
+while getopts p:b:a:t:Z optflag; do
     case $optflag in
         p)
             products=${OPTARG//,/ }
@@ -79,9 +77,6 @@ while getopts p:b:a:t:Y:Z optflag; do
         t)
             tag=${OPTARG}
             ;;
-        Y)
-            pythonVersion=${OPTARG}
-            ;;
         Z)
             useBinaries=true
             ;;
@@ -89,7 +84,7 @@ while getopts p:b:a:t:Y:Z optflag; do
 done
 shift $((OPTIND - 1))
 
-if [[ -z "${buildDir}" || -z "${archiveDir}" || -z "${tag}" || -z "${products}" || -z "${pythonVersion}" ]]; then
+if [[ -z "${buildDir}" || -z "${archiveDir}" || -z "${tag}" || -z "${products}" ]]; then
     usage
     exit 0
 fi
@@ -109,10 +104,6 @@ if [[ ${UID} = 0 ]]; then
     exit 1
 fi
 
-if [[ ${pythonVersion} != "2" && ${pythonVersion} != "3" ]]; then
-    echo "${thisScript}: invalid Python version \"${pythonVersion}\" - expecting 2 or 3"
-    exit 1
-fi
 
 #
 # Is the provided tag a stable version or a weekly version?
@@ -181,7 +172,7 @@ fi
 #
 [[ ${useBinaries} == true ]] && useTarballsFlag="-t"
 export TMPDIR=$(mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX)
-cmd="bash newinstall.sh -b -s ${useTarballsFlag} -${pythonVersion}"
+cmd="bash newinstall.sh -b -s ${useTarballsFlag}"
 trace $cmd ; $cmd
 if [[ ! -f "loadLSST.bash" ]]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
