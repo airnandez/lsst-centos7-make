@@ -1,17 +1,14 @@
 #
-# This is the list of conda packages which are not part of the official
-# LSST distribution that we want to install.
-# It will be consumed by the 'conda install' command
+# This is the list of conda packages we add to the reference LSST distribution.
+# This file is consumed by the a command like 'conda install ... --file <this file>'
 #
 ipython
-jupyter
-jupyterlab
 ipywidgets
 ipyevents
+jupyter
+jupyterlab
 tqdm
 nb_conda_kernels
 numba
 dask
 dask-jobqueue
-postgresql
-psycopg2
