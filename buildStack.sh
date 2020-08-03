@@ -185,29 +185,6 @@ fi
 source loadLSST.bash
 
 #
-# Install conda packages not included in distribution
-# The extra packages to install are specified in a text file to be consumed
-# by the 'conda install' command. Each line of this file contains the name
-# of a package. When installing those extra packages we make sure to not
-# modify dependencies which are the conda packages on top of which the
-# version of the LSST software has been tested against.
-#
-condaExtensionsFile="${thisScriptDir}/condaExtraPackages.txt"
-if [ -f ${condaExtensionsFile} ]; then
-    # Filter out comments and check if there are actually packages to install
-    grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        trace "installing conda extra packages"
-        cmd="conda install --no-update-deps --override-channels --no-channel-priority -c conda-forge -c defaults --quiet --yes --file=${condaExtensionsFile}"
-        trace $cmd ; $cmd
-        if [ $? != 0 ]; then
-            echo "${thisScript}: could not install conda extensions"
-            exit 1
-        fi
-    fi
-fi
-
-#
 # Download and build the requested products
 #
 products=$(echo ${products} | sed -e 's/,/ /g')
@@ -221,11 +198,34 @@ for p in ${products}; do
 done
 
 #
+# Install conda packages not included in distribution
+# The extra packages to install are specified in a text file to be consumed
+# by the 'conda install' command. Each line of that file contains the name
+# of a package. When installing those extra packages we make sure to not
+# modify dependencies which are the conda packages on top of which the
+# version of the LSST software has been tested against.
+#
+condaExtensionsFile="${thisScriptDir}/condaExtraPackages.txt"
+if [ -f ${condaExtensionsFile} ]; then
+    # Filter out comments and check if there are actually packages to install
+    grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        trace "installing conda extra packages"
+        cmd="conda install --no-update-deps --quiet --yes --file=${condaExtensionsFile}"
+        trace $cmd ; $cmd
+        if [ $? != 0 ]; then
+            echo "${thisScript}: could not install conda extensions"
+            exit 1
+        fi
+    fi
+fi
+
+#
 # Perform generic post-installation steps
 #
 
 #
-# Update the Python interpreter path of EUPS installed products: we need to Perform
+# Update the Python interpreter path of EUPS installed products: we need to perform
 # this step for both Linux and macOS
 #
 trace "applying shebangtron"
@@ -247,17 +247,17 @@ if [[ ${os} == "linux" ]]; then
     # Extend the loadLSST.bash to enable devtoolset if necessary
     #
     if [[ ${doEnableDevTools} = true ]]; then
-	    trace "modifying loadLSST.bash for devtoolset"
-	    if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
-	        cp ${HOME}/enableDevtoolset.bash ${buildDir}
-	        chmod ugo-x ${buildDir}/enableDevtoolset.bash
-	        cat >> loadLSST.bash <<-EOF
+        trace "modifying loadLSST.bash for devtoolset"
+        if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
+            cp ${HOME}/enableDevtoolset.bash ${buildDir}
+            chmod ugo-x ${buildDir}/enableDevtoolset.bash
+            cat >> loadLSST.bash <<-EOF
 
 # Enable the C++ compiler runtime required by this release, if available (see README.txt for details)
 [[ -f \${LSST_HOME}/enableDevtoolset.bash ]] && source \${LSST_HOME}/enableDevtoolset.bash ${requiredDevToolSet}
 EOF
-	   fi
-	fi
+       fi
+    fi
 fi
 
 #
