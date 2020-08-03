@@ -12,3 +12,5 @@ nb_conda_kernels
 numba
 dask
 dask-jobqueue
+psycopg2
+pgcli
