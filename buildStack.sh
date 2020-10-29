@@ -210,6 +210,28 @@ if [ -f ${condaExtensionsFile} ]; then
     # Filter out comments and check if there are actually packages to install
     grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
+
+        # On macOS we need to create and activate a conda environment before
+        # installing new packages, to avoid conda not being able to resolve
+        # conflicts
+        if [[ ${os} == "darwin" ]]; then
+            trace "creating rubinenv conda environment"
+            cmd="conda create -n rubinenv -c conda-forge rubinenv"
+            trace $cmd ; $cmd
+            if [ $? != 0 ]; then
+                echo "${thisScript}: could not create rubinenv"
+                exit 1
+            fi
+
+            trace "activating rubinenv environment"
+            cmd="conda activate rubinenv"
+            trace $cmd ; $cmd
+            if [ $? != 0 ]; then
+                echo "${thisScript}: could not activate rubinenv"
+                exit 1
+            fi
+        fi
+
         trace "installing conda extra packages"
         cmd="conda install --no-update-deps --quiet --yes --file=${condaExtensionsFile}"
         trace $cmd ; $cmd
