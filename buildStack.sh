@@ -54,7 +54,7 @@ pythonVersion="3"
 # Routines
 #
 usage () { 
-    echo "Usage: ${thisScript}  -p products  -b <build directory>  -a <archive directory>  -Y <python version> [-Z] -t <tag>"
+    echo "Usage: ${thisScript}  -p products  -b <build directory>  -a <archive directory> [-Z] -t <tag>"
 }
 
 # Start execution
@@ -108,23 +108,12 @@ fi
 #
 # Is the provided tag a stable version or a weekly version?
 #
-if [[ ${tag} =~ ^v[0-9]+_[0-9]+.*$ ]]; then
-    # Stable version tag of the form 'v12_1'
-    # The suffix will be of the form 'v12.1'
-    suffix=${tag//_/.}
-elif [[ ${tag} =~ ^w_[0-9]{4}_[0-9]{1,2}$ ]]; then
-    # Weekly version tag of one of the forms 'w_2017_3' or 'w_2016_15'
-    # The suffix will be identical to the weekly tag
-    # The github tag has the form: w.2017.5
-    suffix=${tag}
-elif [[ ${tag} =~ ^sims_.*$ ]]; then
-    # This is a lsst_sims tag.
-    # The suffix will be identical to the tag
-    suffix=${tag}
-else
+suffix=$(getReleaseDir ${tag})
+if [[ -z ${suffix} ]]; then
     echo "${thisScript}: '${tag}' is not a recognized version tag"
     exit 1
 fi
+
 
 #
 # Set the environment for building this release
@@ -214,9 +203,9 @@ if [ -f ${condaExtensionsFile} ]; then
         # On macOS we need to create and activate a conda environment before
         # installing new packages, to avoid conda not being able to resolve
         # conflicts
-        if [[ ${os} == "darwin" ]]; then
+        if [[ ${os} == "darwin_REMOVE_ME" ]]; then
             trace "creating rubinenv conda environment"
-            cmd="conda create -n rubinenv -c conda-forge rubinenv"
+            cmd="conda create --name rubinenv --channel conda-forge rubinenv"
             trace $cmd ; $cmd
             if [ $? != 0 ]; then
                 echo "${thisScript}: could not create rubinenv"

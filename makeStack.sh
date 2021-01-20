@@ -80,7 +80,7 @@ experimentalExt="dev"
 # usage()
 #
 usage () { 
-    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-p <products>] [-Y <python version>] [-Z] [-X] -t <tag>"
+    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-p <products>] [-Z] [-X] -t <tag>"
 } 
 
 #
@@ -121,19 +121,8 @@ fi
 #
 # Is the provided tag a stable release or a weekly release?
 #
-if [[ ${tag} =~ ^v[0-9]+_[0-9]+.*$ ]]; then
-    # Stable release tag of the form 'v12_1'
-    # The name of the release directory will be of the form 'v12.1'
-    releaseDir=${tag//_/.}
-elif [[ ${tag} =~ ^w_[0-9]{4}_[0-9]{1,2}$ ]]; then
-    # Weekly release tag of one of the forms 'w_2017_3' or 'w_2016_15'
-    # The name of the release directory will be identical to the weekly tag
-    releaseDir=${tag}
-elif [[ ${tag} =~ ^sims_.*$ ]]; then
-    # This is a lsst_sims tag.
-    # The name of the release directory will be identical to the tag
-    releaseDir=${tag}
-else
+releaseDir=$(getReleaseDir ${tag})
+if [[ -z ${releaseDir} ]]; then
     echo "${thisScript}: '${tag}' is not a recognized version tag"
     exit 1
 fi
