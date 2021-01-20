@@ -86,15 +86,21 @@ fi
 
 #
 # Upload the archive file to its destination bucket.
-# We use two buckets: 'stables' for stable versions and 'weeklies' for weekly versions
-# Archive files names with a pattern such as 'w_2018_14' are uploaded to 'weeklies' and
-# archive files named with a pattern like 'v15' are uploaded to 'stables'
+# We use several buckets: 'stables' for stable releases, 'weeklies' for weekly releases
+# and 'dailies' for daily releases.
+# Archive files names with a pattern such as 'w_2018_14' are uploaded to 'weeklies', 
+# archive files named with a pattern like 'v15' are uploaded to 'stables' and
+# archive file names with a pattern like 'd_2021_xx_xx' are uploaded to 'dailies'
 #
 archiveBasename=$(basename ${archiveFile})
 if [[ ${archiveBasename} =~ \.*v[0-9].*- ]]; then
     bucket="cc:stables"
-else
+elif ${archiveBasename} =~ \.*w_[0-9]{4}_[0-9]{2}.*- ]]; then
     bucket="cc:weeklies"
+elif ${archiveBasename} =~ \.*sims_.*- ]]; then
+    bucket="cc:weeklies"
+elif ${archiveBasename} =~ \.*d_[0-9]{4}_[0-9]{2}_[0-9]{2}.*- ]]; then
+    bucket="cc:dailies"
 fi
 if [[ ${archiveBasename} =~ \.*-py3-\.* ]]; then
     destination="${bucket}/py3"
