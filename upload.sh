@@ -95,11 +95,11 @@ fi
 archiveBasename=$(basename ${archiveFile})
 if [[ ${archiveBasename} =~ \.*v[0-9].*- ]]; then
     bucket="cc:stables"
-elif ${archiveBasename} =~ \.*w_[0-9]{4}_[0-9]{2}.*- ]]; then
+elif [[ ${archiveBasename} =~ \.*w_[0-9]{4}_[0-9]{2}.*- ]]; then
     bucket="cc:weeklies"
-elif ${archiveBasename} =~ \.*sims_.*- ]]; then
+elif [[ ${archiveBasename} =~ \.*sims_.*- ]]; then
     bucket="cc:weeklies"
-elif ${archiveBasename} =~ \.*d_[0-9]{4}_[0-9]{2}_[0-9]{2}.*- ]]; then
+elif [[ ${archiveBasename} =~ \.*d_[0-9]{4}_[0-9]{2}_[0-9]{2}.*- ]]; then
     bucket="cc:dailies"
 fi
 if [[ ${archiveBasename} =~ \.*-py3-\.* ]]; then
