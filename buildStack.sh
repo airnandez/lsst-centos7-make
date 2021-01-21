@@ -187,6 +187,25 @@ for p in ${products}; do
 done
 
 #
+# Update the Python interpreter path of EUPS installed products: we need to perform
+# this step for both Linux and macOS
+#
+trace "applying shebangtron"
+shebangtron=${TMPDIR}/shebangtron
+curl -sSL -o ${shebangtron} "https://raw.githubusercontent.com/lsst/shebangtron/master/shebangtron"
+if [[ ! -f ${shebangtron} ]]; then
+    echo "${thisScript}: file ${shebangtron} not found"
+    exit 1
+fi
+cmd="python ${shebangtron}"
+trace $cmd; $cmd
+if [ $? != 0 ]; then
+    echo "${thisScript}: shebangtron failed"
+    exit 1
+fi
+trace "shebangtron finished"
+
+#
 # Install conda packages not included in distribution
 # The extra packages to install are specified in a text file to be consumed
 # by the 'conda install' command. Each line of that file contains the name
@@ -232,32 +251,6 @@ fi
 #
 # Perform generic post-installation steps
 #
-
-#
-# Source again 'loadLSST.bash' before applying shebangtron to avoid
-# failures due to 'eups path' giving inconsistent responses after
-# installing additional packages
-#
-source loadLSST.bash
-
-#
-# Update the Python interpreter path of EUPS installed products: we need to perform
-# this step for both Linux and macOS
-#
-trace "applying shebangtron"
-shebangtron=${TMPDIR}/shebangtron
-curl -sSL -o ${shebangtron} "https://raw.githubusercontent.com/lsst/shebangtron/master/shebangtron"
-if [[ ! -f ${shebangtron} ]]; then
-    echo "${thisScript}: file ${shebangtron} not found"
-    exit 1
-fi
-cmd="python ${shebangtron}"
-trace $cmd; $cmd
-if [ $? != 0 ]; then
-    echo "${thisScript}: shebangtron failed"
-    exit 1
-fi
-trace "shebangtron finished"
 
 #
 # Perform OS-specific post-installation
