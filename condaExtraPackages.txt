@@ -1,6 +1,8 @@
 #
 # This is the list of conda packages we add to the reference LSST distribution.
-# This file is consumed by the a command like 'conda install ... --file <this file>'
+# This file is consumed by the a command like 
+#
+#   conda install ... --file <this file>
 #
 ipython
 ipywidgets
@@ -12,5 +14,3 @@ nb_conda_kernels
 numba
 dask
 dask-jobqueue
-psycopg2
-pgcli
