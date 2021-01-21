@@ -199,33 +199,31 @@ if [ -f ${condaExtensionsFile} ]; then
     # Filter out comments and check if there are actually packages to install
     grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-
-        # On macOS we need to create and activate a conda environment before
-        # installing new packages, to avoid conda not being able to resolve
+        # Create and activate a new conda environment before
+        # installing additinoal packages, to avoid conda not being able to resolve
         # conflicts
-        if [[ ${os} == "darwin_REMOVE_ME" ]]; then
-            trace "creating rubinenv conda environment"
-            cmd="conda create --name rubinenv --channel conda-forge rubinenv"
-            trace $cmd ; $cmd
-            if [ $? != 0 ]; then
-                echo "${thisScript}: could not create rubinenv"
-                exit 1
-            fi
-
-            trace "activating rubinenv environment"
-            cmd="conda activate rubinenv"
-            trace $cmd ; $cmd
-            if [ $? != 0 ]; then
-                echo "${thisScript}: could not activate rubinenv"
-                exit 1
-            fi
+        extendedEnv="${CONDA_DEFAULT_ENV}-ext"
+        trace "creating ${extendedEnv} conda environment"
+        cmd="conda create --name ${extendedEnv} --channel conda-forge rubin-env"
+        trace $cmd ; $cmd
+        if [ $? != 0 ]; then
+            echo "${thisScript}: could not create ${extendedEnv}"
+            exit 1
         fi
 
-        trace "installing conda extra packages"
+        trace "activating ${extendedEnv} environment"
+        cmd="conda activate ${extendedEnv}"
+        trace $cmd ; $cmd
+        if [ $? != 0 ]; then
+            echo "${thisScript}: could not activate ${extendedEnv}"
+            exit 1
+        fi
+
+        trace "installing extra conda packages"
         cmd="conda install --no-update-deps --quiet --yes --file=${condaExtensionsFile}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
-            echo "${thisScript}: could not install conda extensions"
+            echo "${thisScript}: could not install conda extensions into environment ${extendedEnv}"
             exit 1
         fi
     fi
@@ -234,6 +232,13 @@ fi
 #
 # Perform generic post-installation steps
 #
+
+#
+# Source again 'loadLSST.bash' before applying shebangtron to avoid
+# failures due to 'eups path' giving inconsistent responses after
+# installing additional packages
+#
+source loadLSST.bash
 
 #
 # Update the Python interpreter path of EUPS installed products: we need to perform
@@ -248,6 +253,10 @@ if [[ ! -f ${shebangtron} ]]; then
 fi
 cmd="python ${shebangtron}"
 trace $cmd; $cmd
+if [ $? != 0 ]; then
+    echo "${thisScript}: shebangtron failed"
+    exit 1
+fi
 trace "shebangtron finished"
 
 #
@@ -272,6 +281,26 @@ EOF
 fi
 
 #
+# Modify loadLSST.*sh for using the extended conda environment by default (if any)
+# For instance, replace the line
+#    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.1.5}
+# by the extended environment
+#    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.1.5-ext}
+if [[ ! -z ${extendedEnv} ]]; then
+	tmpFile=$(mktemp)
+	trap "rm -f ${tmpFile}" EXIT
+
+	for file in loadLSST.*sh; do
+	   if [[ ${file} =~ .*\.(bash|ksh|zsh) ]]; then
+	      subsExpr="s|^export LSST_CONDA_ENV_NAME=.*$|export LSST_CONDA_ENV_NAME=\${LSST_CONDA_ENV_NAME:-${extendedEnv}}|1"
+	      sed -e "${subsExpr}" ${file} > ${tmpFile}
+	      mv ${tmpFile} ${file}
+	   fi
+	done
+fi
+
+
+#
 # Add README file for this version
 #
 trace "creating README.txt"
@@ -283,9 +312,9 @@ Product(s):          ${products}
 Tag:                 ${tag}
 Build time:          $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 Build platform:      $(osDescription)
+Conda:               $(conda --version)
 Python interpreter:  $(pythonDescription)
 C++ compiler:        $(cppDescription)
-Conda:               $(conda --version)
 Documentation:       https://sw.lsst.eu
 EOF
 
