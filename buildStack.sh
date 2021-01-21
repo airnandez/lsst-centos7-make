@@ -209,19 +209,20 @@ trace "shebangtron finished"
 # Install conda packages not included in distribution
 # The extra packages to install are specified in a text file to be consumed
 # by the 'conda install' command. Each line of that file contains the name
-# of a package. When installing those extra packages we make sure to not
+# of a package. When installing those extra packages we make sure not to
 # modify dependencies which are the conda packages on top of which the
 # version of the LSST software has been tested against.
 #
+didCreateEnvironment=false
 condaExtensionsFile="${thisScriptDir}/condaExtraPackages.txt"
 if [ -f ${condaExtensionsFile} ]; then
     # Filter out comments and check if there are actually packages to install
     grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         # Create and activate a new conda environment before
-        # installing additinoal packages, to avoid conda not being able to resolve
-        # conflicts
-        extendedEnv="${CONDA_DEFAULT_ENV}-ext"
+        # installing additional packages
+        baseEnv=${CONDA_DEFAULT_ENV}
+        extendedEnv="${baseEnv}-ext"
         trace "creating ${extendedEnv} conda environment"
         cmd="conda create --name ${extendedEnv} --channel conda-forge rubin-env"
         trace $cmd ; $cmd
@@ -239,11 +240,28 @@ if [ -f ${condaExtensionsFile} ]; then
         fi
 
         trace "installing extra conda packages"
-        cmd="conda install --no-update-deps --quiet --yes --file=${condaExtensionsFile}"
+        cmd="conda install --no-update-deps --channel conda-forge --quiet --yes --file=${condaExtensionsFile}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
+            # Could not install extra packages into the newly created environment
+            # Revert to the original environment
             echo "${thisScript}: could not install conda extensions into environment ${extendedEnv}"
-            exit 1
+            cmd="conda deactivate"
+            trace $cmd ; $cmd
+
+            echo "${thisScript}: reactivating base environment ${baseEnv}"
+            cmd="conda activate ${baseEnv}"
+            trace $cmd ; $cmd
+            if [ $? != 0 ]; then
+                echo "${thisScript}: could not reactivate conda environment ${baseEnv}"
+                exit 1
+            fi
+
+            # Remove the newly create environment
+            cmd="conda remove --name ${extendedEnv} --all"
+            trace $cmd ; $cmd
+        else
+            didCreateEnvironment=true
         fi
     fi
 fi
@@ -279,13 +297,13 @@ fi
 #    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.1.5}
 # by the extended environment
 #    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.1.5-ext}
-if [[ ! -z ${extendedEnv} ]]; then
+if [[ ${didCreateEnvironment} = true ]]; then
 	tmpFile=$(mktemp)
 	trap "rm -f ${tmpFile}" EXIT
 
 	for file in loadLSST.*sh; do
 	   if [[ ${file} =~ .*\.(bash|ksh|zsh) ]]; then
-	      subsExpr="s|^export LSST_CONDA_ENV_NAME=.*$|export LSST_CONDA_ENV_NAME=\${LSST_CONDA_ENV_NAME:-${extendedEnv}}|1"
+	      subsExpr="s|^export LSST_CONDA_ENV_NAME=.*$|export LSST_CONDA_ENV_NAME=\${LSST_CONDA_ENV_NAME:-${CONDA_DEFAULT_ENV}}|1"
 	      sed -e "${subsExpr}" ${file} > ${tmpFile}
 	      mv ${tmpFile} ${file}
 	   fi
@@ -306,6 +324,7 @@ Tag:                 ${tag}
 Build time:          $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 Build platform:      $(osDescription)
 Conda:               $(conda --version)
+Conda environment:   ${CONDA_DEFAULT_ENV}
 Python interpreter:  $(pythonDescription)
 C++ compiler:        $(cppDescription)
 Documentation:       https://sw.lsst.eu
