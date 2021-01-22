@@ -7,7 +7,6 @@
 ipython
 ipywidgets
 ipyevents
-jupyter
 jupyterlab
 tqdm
 nb_conda_kernels
