@@ -169,6 +169,11 @@ if [[ ! -f "loadLSST.bash" ]]; then
 fi
 
 #
+# Remove conda configuration files
+#
+rm -rf ${HOME}/.conda ${HOME}/.condarc
+
+#
 # Source minimal LSST environment
 #
 source loadLSST.bash
@@ -214,11 +219,16 @@ trace "shebangtron finished"
 # version of the LSST software has been tested against.
 #
 didCreateEnvironment=false
-condaExtensionsFile="${thisScriptDir}/condaExtraPackages.txt"
+condaExtensionsFile="${thisScriptDir}/condaExtraPackages-${os}.txt"
 if [ -f ${condaExtensionsFile} ]; then
     # Filter out comments and check if there are actually packages to install
     grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
+        cmd="conda config --add channels conda-forge"
+        trace $cmd ; $cmd
+        cmd="conda config --set channel_priority strict"
+        trace $cmd ; $cmd
+
         # Create and activate a new conda environment before
         # installing additional packages
         baseEnv=${CONDA_DEFAULT_ENV}
@@ -239,8 +249,13 @@ if [ -f ${condaExtensionsFile} ]; then
             exit 1
         fi
 
+        # Install mamba
+        cmd="conda install mamba"
+        trace $cmd ; $cmd
+
         trace "installing extra conda packages"
-        cmd="conda install --no-update-deps --channel conda-forge --quiet --yes --file=${condaExtensionsFile}"
+        cmd="mamba install --freeze-installed --channel conda-forge --quiet --yes --file ${condaExtensionsFile}"
+        # cmd="conda install --no-update-deps --channel conda-forge --quiet --yes --file=${condaExtensionsFile}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             # Could not install extra packages into the newly created environment
@@ -298,14 +313,16 @@ fi
 # by the extended environment
 #    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.1.5-ext}
 if [[ ${didCreateEnvironment} = true ]]; then
+    trace "modifying loadLSST.*sh"
 	tmpFile=$(mktemp)
 	trap "rm -f ${tmpFile}" EXIT
 
 	for file in loadLSST.*sh; do
-	   if [[ ${file} =~ .*\.(bash|ksh|zsh) ]]; then
+	   if [[ ${file} =~ loadLSST\.(bash|ksh|zsh) ]]; then
 	      subsExpr="s|^export LSST_CONDA_ENV_NAME=.*$|export LSST_CONDA_ENV_NAME=\${LSST_CONDA_ENV_NAME:-${CONDA_DEFAULT_ENV}}|1"
 	      sed -e "${subsExpr}" ${file} > ${tmpFile}
-	      mv ${tmpFile} ${file}
+	      cp ${tmpFile} ${file}
+          chmod ugo+r,ugo-w,ugo-x ${file}
 	   fi
 	done
 fi
