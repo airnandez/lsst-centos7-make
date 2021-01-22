@@ -89,15 +89,37 @@ trace() {
 # Returns true if the argument tag is valid
 isValidTag() {
     local tag=$1
+    local releaseDir=$(getReleaseDir ${tag})
+    if [[ -z ${releaseDir} ]]; then
+        return 1
+    fi
+    return 0
+}
+
+# Returns the name of the target release directory (based on a product tag)
+# or the empty string if the format of the tag cannot be interpreted
+getReleaseDir() {
+    local tag=$1
+    local releaseDir=""
     if [[ ${tag} =~ ^v[0-9]+_[0-9]+.*$ ]]; then
-        # Stable version tag of the form 'v12_1' or 'v16_0_rc1'
-        return 0
+        # Stable release tag of the form 'v12_1'
+        # The name of the release directory will be of the form 'v12.1'
+        releaseDir=${tag//_/.}
     elif [[ ${tag} =~ ^w_[0-9]{4}_[0-9]{1,2}$ ]]; then
-        # Weekly version tag of one of the forms 'w_2017_3' or 'w_2016_15'
-        return 0
+        # Weekly release tag of one of the forms 'w_2017_3' or 'w_2016_15'
+        # The name of the release directory will be identical to the weekly tag
+        releaseDir=${tag}
+    elif [[ ${tag} =~ ^d_[0-9]{4}_[0-9]{1,2}_[0-9]{1,2}$ ]]; then
+        # Daily release tag is of the form 'd_2021_01_20'
+        # The name of the release directory will be identical to the daily tag
+        releaseDir=${tag}
     elif [[ ${tag} =~ ^sims_.*$ ]]; then
         # This is a lsst_sims tag.
-        return 0
+        # The name of the release directory will be identical to the tag
+        releaseDir=${tag}
+    else
+        # Could not understand the tag format
+        releaseDir=""
     fi
-    return 1
+    echo ${releaseDir}
 }

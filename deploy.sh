@@ -123,11 +123,13 @@ if ! $(isValidTag ${tag}); then
 fi
 
 # Ensure we are not redeploying
-if [[ ${tag} =~ ^w ]]; then
-    bucket="cc:weeklies/py3"
-elif [[ ${tag} =~ ^v ]]; then
+if [[ ${tag} =~ ^v ]]; then
     bucket="cc:stables/py3"
     tag=${tag//_/.}
+elif [[ ${tag} =~ ^w ]]; then
+    bucket="cc:weeklies/py3"
+elif [[ ${tag} =~ ^d ]]; then
+    bucket="cc:dailies/py3"
 elif [[ ${tag} =~ ^sims_ ]]; then
     bucket="cc:weeklies/py3"
 fi
