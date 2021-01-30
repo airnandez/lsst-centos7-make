@@ -211,6 +211,16 @@ fi
 trace "shebangtron finished"
 
 #
+# Configure EUPS site startup file
+#
+trace "configuring EUPS site startup file"
+mkdir -p ${EUPS_PATH}/site
+cat >> ${EUPS_PATH}/site/startup.py <<-EOF
+# Configure EUPS not to try to acquire locks on a read-only file system
+hooks.config.site.lockDirectoryBase = None
+EOF
+
+#
 # Install conda packages not included in distribution
 # The extra packages to install are specified in a text file to be consumed
 # by the 'conda install' command. Each line of that file contains the name
@@ -345,15 +355,6 @@ Conda environment:   ${CONDA_DEFAULT_ENV}
 Python interpreter:  $(pythonDescription)
 C++ compiler:        $(cppDescription)
 Documentation:       https://sw.lsst.eu
-EOF
-
-#
-# Configure EUPS site startup file
-#
-trace "configuring EUPS site startup file"
-cat >> ${buildDir}/stack/current/site/startup.py <<-EOF
-# Configure EUPS not to try to acquire locks on a read-only file system
-hooks.config.site.lockDirectoryBase = None
 EOF
 
 #
