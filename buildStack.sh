@@ -214,8 +214,10 @@ trace "shebangtron finished"
 # Configure EUPS site startup file
 #
 trace "configuring EUPS site startup file"
-mkdir -p ${EUPS_PATH}/site
-cat >> ${EUPS_PATH}/site/startup.py <<-EOF
+eupsPath=${EUPS_PATH:-${buildDir}/stack/current}
+eupsPath=$(echo ${eupsPath} | awk -F ':' '{print $1}')
+mkdir -p ${eupsPath}/site
+cat >> ${eupsPath}/site/startup.py <<-EOF
 # Configure EUPS not to try to acquire locks on a read-only file system
 hooks.config.site.lockDirectoryBase = None
 EOF
