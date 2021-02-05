@@ -371,9 +371,9 @@ fi
 #
 # Change permissions for this installation
 #
-trace "modifying permissions under ${buildDir}"
-cmd="chmod -R u-w,g-w,o-w ${buildDir}"
-trace $cmd ; $cmd
+# trace "modifying permissions under ${buildDir}"
+# cmd="chmod -R u-w,g-w,o-w ${buildDir}"
+# trace $cmd ; $cmd
 
 #
 # Make archive file
