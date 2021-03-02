@@ -8,6 +8,7 @@ ipython
 ipywidgets
 ipyevents
 jupyterlab
+nodejs
 tqdm
 nb_conda_kernels
 numba

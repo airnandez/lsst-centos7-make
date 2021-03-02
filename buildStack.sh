@@ -296,6 +296,14 @@ fi
 #
 # Perform generic post-installation steps
 #
+jupyterCmd=$(command -v jupyter)
+if [[ -n "${jupyterCmd}" ]]; then
+   #
+   # Build Jupyter Lab source extensions
+   #
+   cmd="${jupyterCmd} lab build"
+   trace $cmd ; $cmd
+fi
 
 #
 # Perform OS-specific post-installation
