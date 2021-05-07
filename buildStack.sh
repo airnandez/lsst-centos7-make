@@ -236,17 +236,31 @@ if [ -f ${condaExtensionsFile} ]; then
     # Filter out comments and check if there are actually packages to install
     grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
+        # Configure conda
+        cmd="conda --version"
+        trace $cmd ; $cmd
+        cmd="conda info --envs"
+        trace $cmd ; $cmd
         cmd="conda config --add channels conda-forge"
         trace $cmd ; $cmd
         cmd="conda config --set channel_priority strict"
         trace $cmd ; $cmd
+
+        # Install mamba (conda install does not always manage to resolve 
+        # dependencies or else it take ages)
+        cmd="conda install mamba --name base --channel conda-forge"
+        trace $cmd ; $cmd
+        if [ $? != 0 ]; then
+            echo "${thisScript}: could not install mamba"
+            exit 1
+        fi
 
         # Create and activate a new conda environment before
         # installing additional packages
         baseEnv=${CONDA_DEFAULT_ENV}
         extendedEnv="${baseEnv}-ext"
         trace "creating ${extendedEnv} conda environment"
-        cmd="conda create --name ${extendedEnv} --channel conda-forge rubin-env"
+        cmd="mamba create --name ${extendedEnv} --channel conda-forge rubin-env"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             echo "${thisScript}: could not create ${extendedEnv}"
@@ -261,13 +275,8 @@ if [ -f ${condaExtensionsFile} ]; then
             exit 1
         fi
 
-        # Install mamba
-        cmd="conda install mamba"
-        trace $cmd ; $cmd
-
         trace "installing extra conda packages"
         cmd="mamba install --freeze-installed --channel conda-forge --quiet --yes --file ${condaExtensionsFile}"
-        # cmd="conda install --no-update-deps --channel conda-forge --quiet --yes --file=${condaExtensionsFile}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             # Could not install extra packages into the newly created environment
@@ -284,8 +293,8 @@ if [ -f ${condaExtensionsFile} ]; then
                 exit 1
             fi
 
-            # Remove the newly create environment
-            cmd="conda remove --name ${extendedEnv} --all"
+            # Remove the newly created environment
+            cmd="mamba remove --name ${extendedEnv} --all"
             trace $cmd ; $cmd
         else
             didCreateEnvironment=true
@@ -334,17 +343,17 @@ fi
 #    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.1.5-ext}
 if [[ ${didCreateEnvironment} = true ]]; then
     trace "modifying loadLSST.*sh"
-	tmpFile=$(mktemp)
-	trap "rm -f ${tmpFile}" EXIT
+    tmpFile=$(mktemp)
+    trap "rm -f ${tmpFile}" EXIT
 
-	for file in loadLSST.*sh; do
-	   if [[ ${file} =~ loadLSST\.(bash|ksh|zsh) ]]; then
-	      subsExpr="s|^export LSST_CONDA_ENV_NAME=.*$|export LSST_CONDA_ENV_NAME=\${LSST_CONDA_ENV_NAME:-${CONDA_DEFAULT_ENV}}|1"
-	      sed -e "${subsExpr}" ${file} > ${tmpFile}
-	      cp ${tmpFile} ${file}
+    for file in loadLSST.*sh; do
+       if [[ ${file} =~ loadLSST\.(bash|ksh|zsh) ]]; then
+          subsExpr="s|^export LSST_CONDA_ENV_NAME=.*$|export LSST_CONDA_ENV_NAME=\${LSST_CONDA_ENV_NAME:-${CONDA_DEFAULT_ENV}}|1"
+          sed -e "${subsExpr}" ${file} > ${tmpFile}
+          cp ${tmpFile} ${file}
           chmod ugo+r,ugo-w,ugo-x ${file}
-	   fi
-	done
+       fi
+    done
 fi
 
 
