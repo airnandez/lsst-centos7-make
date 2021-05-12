@@ -260,7 +260,7 @@ if [ -f ${condaExtensionsFile} ]; then
         baseEnv=${CONDA_DEFAULT_ENV}
         extendedEnv="${baseEnv}-ext"
         trace "creating ${extendedEnv} conda environment"
-        cmd="mamba create --name ${extendedEnv} --channel conda-forge rubin-env"
+        cmd="conda create --name ${extendedEnv} --clone ${baseEnv}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             echo "${thisScript}: could not create ${extendedEnv}"
@@ -282,9 +282,6 @@ if [ -f ${condaExtensionsFile} ]; then
             # Could not install extra packages into the newly created environment
             # Revert to the original environment
             echo "${thisScript}: could not install conda extensions into environment ${extendedEnv}"
-            cmd="conda deactivate"
-            trace $cmd ; $cmd
-
             echo "${thisScript}: reactivating base environment ${baseEnv}"
             cmd="conda activate ${baseEnv}"
             trace $cmd ; $cmd
@@ -294,7 +291,8 @@ if [ -f ${condaExtensionsFile} ]; then
             fi
 
             # Remove the newly created environment
-            cmd="mamba remove --name ${extendedEnv} --all"
+            echo "${thisScript}: removing extended environment ${extendedEnv}"
+            cmd="conda env remove --name ${extendedEnv}"
             trace $cmd ; $cmd
         else
             didCreateEnvironment=true
