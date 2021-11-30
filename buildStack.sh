@@ -132,10 +132,10 @@ fi
 # Download the bootstrap installer from the canonical repository. Stable versions
 # use a specific branch of newinstall.sh named after the version number
 #
-branch='master'
+branch='main'
 if [[ ${suffix} =~ ^v.*$ ]]; then
-    # The name of the branch is the stable tag minus the leading character: v22.0.0 -> 22.0.0
-    branch=${suffix:1}
+    # The name of the branch is the stable tag: v22.0.0 -> 22.0.0
+    branch="v${suffix:1}"
 fi
 url="https://raw.githubusercontent.com/lsst/lsst/${branch}/scripts/newinstall.sh"
 status=$(curl -s --head  ${url} | head -n 1)
