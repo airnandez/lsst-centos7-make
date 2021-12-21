@@ -133,9 +133,12 @@ fi
 # use a specific branch of newinstall.sh named after the version number
 #
 branch='main'
-if [[ ${suffix} =~ ^v.*$ ]]; then
-    # The name of the branch is the stable tag: v22.0.0 -> 22.0.0
-    branch="v${suffix:1}"
+if [[ ${suffix} =~ ^v.*\.rc[0-9]*$ ]]; then
+    # The name of the branch is identical to the tag v23.0.0.rc4 -> v23.0.0.rc4
+    branch="${suffix}"
+elif [[ ${suffix} =~ ^v.*$ ]]; then
+    # The name of the branch is the stable tag minus the initial 'v': v23.0.0 -> 23.0.0
+    branch="${suffix:1}"
 fi
 url="https://raw.githubusercontent.com/lsst/lsst/${branch}/scripts/newinstall.sh"
 status=$(curl -s --head  ${url} | head -n 1)
