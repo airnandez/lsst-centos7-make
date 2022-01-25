@@ -334,14 +334,13 @@ fi
 # by the extended environment
 #    export LSST_CONDA_ENV_NAME=${1:-${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.7.0-ext}}
 if [[ ${didCreateEnvironment} = true ]]; then
-    trace "adapting loadLSST.*sh"
     tmpFile=$(mktemp)
     trap "rm -f ${tmpFile}" EXIT
 
+    subsExpr="s|^export LSST_CONDA_ENV_NAME=.*$|export LSST_CONDA_ENV_NAME=\'${CONDA_DEFAULT_ENV}\'|1"
     for file in loadLSST.*sh; do
         trace "adapting ${file}"
         if [[ ${file} =~ loadLSST\.(ash|bash|fish|sh|zsh) ]]; then
-            subsExpr="s|^export LSST_CONDA_ENV_NAME=.*$|export LSST_CONDA_ENV_NAME=\${1:-\${LSST_CONDA_ENV_NAME:-${CONDA_DEFAULT_ENV}}}|1"
             sed -e "${subsExpr}" ${file} > ${tmpFile}
             extendedFile="${file%.*}-ext.${file##*.}"
             cp ${tmpFile} ${extendedFile}
@@ -365,7 +364,7 @@ Build time:          $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 Build platform:      $(osDescription)
 conda:               $(conda --version)
 mamba:               $(mamba --version | grep mamba)
-conda environment:   ${CONDA_DEFAULT_ENV}
+conda environment:   ${baseEnv:-${CONDA_DEFAULT_ENV}}
 Python interpreter:  $(pythonDescription)
 C++ compiler:        $(cppDescription)
 Documentation:       https://sw.lsst.eu
