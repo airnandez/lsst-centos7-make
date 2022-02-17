@@ -270,7 +270,7 @@ if [ -f ${condaExtensionsFile} ]; then
         fi
 
         trace "installing extra conda packages"
-        cmd="mamba --no-banner install --freeze-installed --channel conda-forge --quiet --yes --file ${condaExtensionsFile}"
+        cmd="mamba --no-banner install --channel conda-forge --quiet --yes --file ${condaExtensionsFile}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             # Could not install extra packages into the newly created environment
