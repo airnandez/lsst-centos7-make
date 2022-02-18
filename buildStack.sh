@@ -164,11 +164,11 @@ rm -rf ${HOME}/.conda ${HOME}/.condarc ${HOME}/.mambarc
 # Bootstrap the installation. After executing the bootstrap script, there must
 # be a file 'loadLSST.bash'
 #
+export TMPDIR=$(mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX)
 installerFlags="-B"  # Do not use binaries
 [[ ${useBinaries} == true ]] && installerFlags="-S" # Do not use sources
-export TMPDIR=$(mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX)
-export CONDA_EXE=''
-cmd="bash lsstinstall ${installerFlags}"
+
+cmd="bash lsstinstall -P -T ${tag} ${installerFlags}"
 trace $cmd ; $cmd
 if [[ ! -f "loadLSST.bash" ]]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
@@ -328,11 +328,11 @@ EOF
 fi
 
 #
-# Create adapted verrsions of loadLSST.*sh for activating the extended conda environment by default (if any)
+# Create adapted versions of loadLSST.*sh for activating the extended conda environment by default (if any)
 # For instance, replace the line
-#    export LSST_CONDA_ENV_NAME=${1:-${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.7.0}}
+#    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.7.0}
 # by the extended environment
-#    export LSST_CONDA_ENV_NAME=${1:-${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.7.0-ext}}
+#    export LSST_CONDA_ENV_NAME='lsst-scipipe-0.7.0-ext'
 if [[ ${didCreateEnvironment} = true ]]; then
     tmpFile=$(mktemp)
     trap "rm -f ${tmpFile}" EXIT
