@@ -128,26 +128,14 @@ if [[ ${doEnableDevTools} = true && -f ${HOME}/enableDevtoolset.bash ]]; then
     source ${HOME}/enableDevtoolset.bash ${requiredDevToolSet}
 fi
 
-#
-# Download the bootstrap installer from the canonical repository. Stable versions
-# use a specific branch of newinstall.sh named after the version number
-#
-branch='main'
-if [[ ${suffix} =~ ^v.*\.rc[0-9]*$ ]]; then
-    # The name of the branch is identical to the tag v23.0.0.rc4 -> v23.0.0.rc4
-    branch="${suffix}"
-elif [[ ${suffix} =~ ^v.*$ ]]; then
-    # The name of the branch is the stable tag minus the initial 'v': v23.0.0 -> 23.0.0
-    branch="${suffix:1}"
-fi
-url="https://raw.githubusercontent.com/lsst/lsst/${branch}/scripts/newinstall.sh"
-status=$(curl -s --head  ${url} | head -n 1)
+url="https://raw.githubusercontent.com/lsst/lsst/main/scripts/lsstinstall"  # or use redirector https://ls.st/lsstinstall
+status=$(curl --silent --head ${url} | head -n 1)
 if [[ ${status} != HTTP*200* ]]; then
-    echo "${thisScript}: download installer could not be found at ${url}"
+    echo "${thisScript}: could not find installer at ${url}"
     exit 1
 fi
 cd ${buildDir}
-cmd="curl -s -L -o newinstall.sh ${url}"
+cmd="curl --silent --location --remote-name ${url}"
 trace "working directory" $(pwd)
 trace $cmd ; $cmd
 
@@ -159,18 +147,28 @@ trace $cmd ; $cmd
 #    10.12  Sierra
 #    10.13  High Sierra
 #    10.14  Mojave
+#    10.15  Catalina
+#    11     Big Sur
+#    12     Monterey
 #
 if [[ ${os} == "darwin" ]]; then
     export MACOSX_DEPLOYMENT_TARGET="10.9"
 fi
 
 #
+# Remove conda & mamba configuration files
+#
+rm -rf ${HOME}/.conda ${HOME}/.condarc ${HOME}/.mambarc
+
+#
 # Bootstrap the installation. After executing the bootstrap script, there must
 # be a file 'loadLSST.bash'
 #
-[[ ${useBinaries} == true ]] && useTarballsFlag="-t"
 export TMPDIR=$(mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX)
-cmd="bash newinstall.sh -b -s ${useTarballsFlag}"
+installerFlags="-B"  # Do not use binaries
+[[ ${useBinaries} == true ]] && installerFlags="-S" # Do not use sources
+
+cmd="bash lsstinstall -P -T ${tag} ${installerFlags}"
 trace $cmd ; $cmd
 if [[ ! -f "loadLSST.bash" ]]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
@@ -178,13 +176,9 @@ if [[ ! -f "loadLSST.bash" ]]; then
 fi
 
 #
-# Remove conda configuration files
-#
-rm -rf ${HOME}/.conda ${HOME}/.condarc
-
-#
 # Source minimal LSST environment
 #
+trace "activating minimal LSST environment via loadLSST.bash"
 source loadLSST.bash
 
 #
@@ -250,26 +244,17 @@ if [ -f ${condaExtensionsFile} ]; then
         trace $cmd ; $cmd
         cmd="conda info --envs"
         trace $cmd ; $cmd
-        cmd="conda config --add channels conda-forge"
-        trace $cmd ; $cmd
-        cmd="conda config --set channel_priority strict"
-        trace $cmd ; $cmd
-
-        # Install mamba (conda install does not always manage to resolve 
-        # dependencies or else it take ages)
-        cmd="conda install mamba --name base --channel conda-forge"
-        trace $cmd ; $cmd
-        if [ $? != 0 ]; then
-            echo "${thisScript}: could not install mamba"
-            exit 1
-        fi
+        # cmd="conda config --add channels conda-forge"
+        # trace $cmd ; $cmd
+        # cmd="conda config --set channel_priority strict"
+        # trace $cmd ; $cmd
 
         # Create and activate a new conda environment before
         # installing additional packages
         baseEnv=${CONDA_DEFAULT_ENV}
         extendedEnv="${baseEnv}-ext"
         trace "creating ${extendedEnv} conda environment"
-        cmd="conda create --name ${extendedEnv} --clone ${baseEnv}"
+        cmd="mamba --no-banner create --name ${extendedEnv} --clone ${baseEnv}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             echo "${thisScript}: could not create ${extendedEnv}"
@@ -285,7 +270,7 @@ if [ -f ${condaExtensionsFile} ]; then
         fi
 
         trace "installing extra conda packages"
-        cmd="mamba install --freeze-installed --channel conda-forge --quiet --yes --file ${condaExtensionsFile}"
+        cmd="mamba --no-banner install --channel conda-forge --quiet --yes --file ${condaExtensionsFile}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             # Could not install extra packages into the newly created environment
@@ -301,7 +286,7 @@ if [ -f ${condaExtensionsFile} ]; then
 
             # Remove the newly created environment
             echo "${thisScript}: removing extended environment ${extendedEnv}"
-            cmd="conda env remove --name ${extendedEnv}"
+            cmd="mamba env remove --name ${extendedEnv}"
             trace $cmd ; $cmd
         else
             didCreateEnvironment=true
@@ -314,11 +299,11 @@ fi
 #
 jupyterCmd=$(command -v jupyter)
 if [[ -n "${jupyterCmd}" ]]; then
-   #
-   # Build Jupyter Lab source extensions
-   #
-   cmd="${jupyterCmd} lab build"
-   trace $cmd ; $cmd
+    #
+    # Build Jupyter Lab source extensions
+    #
+    cmd="${jupyterCmd} lab build"
+    trace $cmd ; $cmd
 fi
 
 #
@@ -343,23 +328,24 @@ EOF
 fi
 
 #
-# Modify loadLSST.*sh for using the extended conda environment by default (if any)
+# Create adapted versions of loadLSST.*sh for activating the extended conda environment by default (if any)
 # For instance, replace the line
-#    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.1.5}
+#    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.7.0}
 # by the extended environment
-#    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.1.5-ext}
+#    export LSST_CONDA_ENV_NAME='lsst-scipipe-0.7.0-ext'
 if [[ ${didCreateEnvironment} = true ]]; then
-    trace "modifying loadLSST.*sh"
     tmpFile=$(mktemp)
     trap "rm -f ${tmpFile}" EXIT
 
+    subsExpr="s|^export LSST_CONDA_ENV_NAME=.*$|export LSST_CONDA_ENV_NAME=\'${CONDA_DEFAULT_ENV}\'|1"
     for file in loadLSST.*sh; do
-       if [[ ${file} =~ loadLSST\.(bash|ksh|zsh) ]]; then
-          subsExpr="s|^export LSST_CONDA_ENV_NAME=.*$|export LSST_CONDA_ENV_NAME=\${LSST_CONDA_ENV_NAME:-${CONDA_DEFAULT_ENV}}|1"
-          sed -e "${subsExpr}" ${file} > ${tmpFile}
-          cp ${tmpFile} ${file}
-          chmod ugo+r,ugo-w,ugo-x ${file}
-       fi
+        trace "adapting ${file}"
+        if [[ ${file} =~ loadLSST\.(ash|bash|fish|sh|zsh) ]]; then
+            sed -e "${subsExpr}" ${file} > ${tmpFile}
+            extendedFile="${file%.*}-ext.${file##*.}"
+            cp ${tmpFile} ${extendedFile}
+            chmod u=rw-,go=r-- ${extendedFile}
+        fi
     done
 fi
 
@@ -376,8 +362,9 @@ Product(s):          ${products}
 Tag:                 ${tag}
 Build time:          $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 Build platform:      $(osDescription)
-Conda:               $(conda --version)
-Conda environment:   ${CONDA_DEFAULT_ENV}
+conda:               $(conda --version)
+mamba:               $(mamba --version | grep mamba)
+conda environment:   ${baseEnv:-${CONDA_DEFAULT_ENV}}
 Python interpreter:  $(pythonDescription)
 C++ compiler:        $(cppDescription)
 Documentation:       https://sw.lsst.eu
@@ -387,9 +374,18 @@ EOF
 # Add .cvmfscatalog when building for distribution via CernVM FS
 #
 if [[ ${buildDir} =~ /cvmfs ]]; then
+    # Add an empty '.cvmfscatalog' file at the top of this release
     trace "creating .cvmfscatalog file"
     cmd="touch ${buildDir}/.cvmfscatalog"
     trace $cmd ; $cmd
+
+    # Add an empty '.cvmfscatalog' file at the root directory of
+    # each conda environment
+    trace "creating .cvmfscatalog files for each conda environment"
+    for dir in $(conda env list | awk '/^lsst-scipipe-*/ {print $NF}'); do
+        cmd="touch ${dir}/.cvmfscatalog"
+        trace $cmd ; $cmd
+    done
 fi
 
 #

@@ -12,5 +12,5 @@ nodejs
 tqdm
 nb_conda_kernels
 numba
-dask
+dask[complete]
 dask-jobqueue
