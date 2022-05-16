@@ -156,9 +156,9 @@ if [[ ${os} == "darwin" ]]; then
 fi
 
 #
-# Remove conda & mamba configuration files
+# Remove conda & mamba configuration files as well as astropy cache
 #
-rm -rf ${HOME}/.conda ${HOME}/.condarc ${HOME}/.mambarc
+rm -rf ${HOME}/.conda ${HOME}/.condarc ${HOME}/.mambarc ${HOME}/.astropy ${HOME}/.lsst/astropy
 
 #
 # Bootstrap the installation. After executing the bootstrap script, there must
