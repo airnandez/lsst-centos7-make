@@ -12,13 +12,14 @@
 #                                                                             #
 #    where:                                                                   #
 #        <base product> is the identifier of the base product to deploy,      #
-#            such as "lsst_distrib" or "lsst_sims".                           #
-#             Default: "lsst_distrib"                                         #
+#           such as "lsst_distrib" or "lsst_sims".                            #
+#           Default: "lsst_distrib"                                           #
 #                                                                             #
 #        <deploy dir> is the top deploy directory.                            #
-#             Default: "/cvmfs/sw.lsst.eu"                                    #
+#           Default: "/cvmfs/sw.lsst.eu"                                      #
 #                                                                             #
 #        <architecture> is the kernel architecture of the release to deploy   #
+#            e.g. "x86_64" or "arm64"                                         #
 #            Default: "x86_64"                                                #
 #                                                                             #
 #        <platform> is the operating system to deploy this release on         #
@@ -109,7 +110,16 @@ case ${platform} in
         exit 1
         ;;
 esac
+
 arch=$(echo ${arch} | tr [:upper:] [:lower:])
+case ${arch} in
+    "x86_64"|"arm64")
+        ;;
+    *)
+        echo "${thisScript}: unsupported architecture value \"${arch}\" (expecting \"x86_64\" or \"arm64\")"
+        exit 1
+        ;;
+esac
 platform=${platform}-${arch}
 
 if [[ ! -d ${deployDir} ]]; then

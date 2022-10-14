@@ -49,9 +49,22 @@ fi
 #
 rcloneUrl="https://downloads.rclone.org/rclone-current-linux-amd64.zip"
 if [ ${os} == "darwin" ]; then
-    rcloneUrl="https://downloads.rclone.org/rclone-current-osx-amd64.zip"
+    case $(uname -m) in
+        "x86_64")
+            rcloneUrl="https://downloads.rclone.org/rclone-current-osx-amd64.zip"
+            ;;
+
+        "arm64")
+            rcloneUrl="https://downloads.rclone.org/rclone-current-osx-arm64.zip"
+            ;;
+
+        *)
+            echo "${thisScript}: could not determine what rclone release to download for this host architecture"
+            exit 1
+            ;;
+    esac
 fi
-rcloneZipFile=${TMPDIR}/rclone-current-amd64.zip
+rcloneZipFile=${TMPDIR}/rclone-current.zip
 rm -rf ${rcloneZipFile}
 curl -s -L -o ${rcloneZipFile} ${rcloneUrl}
 if [ $? -ne 0 ]; then
