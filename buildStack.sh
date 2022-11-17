@@ -226,6 +226,15 @@ hooks.config.site.lockDirectoryBase = None
 EOF
 
 #
+# Execute "conda init shell", for conda 22.9.0
+# (see: https://github.com/conda/conda/issues/11885)
+#
+if [[ $(conda --version) =~ "conda 22.9" ]]; then
+    cmd="conda init bash zsh fish"
+    trace $cmd ; $cmd
+fi
+
+#
 # Install conda packages not included in distribution
 # The extra packages to install are specified in a text file to be consumed
 # by the 'conda install' command. Each line of that file contains the name
