@@ -168,7 +168,7 @@ export TMPDIR=$(mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX)
 installerFlags="-B"  # Do not use binaries
 [[ ${useBinaries} == true ]] && installerFlags="-S" # Do not use sources
 
-cmd="bash lsstinstall -P -T ${tag} ${installerFlags}"
+cmd="bash lsstinstall -P -X ${tag} ${installerFlags}"
 trace $cmd ; $cmd
 if [[ ! -f "loadLSST.bash" ]]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
