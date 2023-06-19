@@ -15,6 +15,8 @@ numba
 dask[complete]
 dask-jobqueue
 
+
+# -----------------------------------------------------------------------------
 # Packages below added to match USDF local shared stack (see PREOPS-1317)
 
 mypy
@@ -62,7 +64,19 @@ types-deprecated
 types-setuptools
 types-urllib3
 
+
+# -----------------------------------------------------------------------------
 # Packages below added to use Parsl at Rubin Data Facilities (see PREOPS-1317)
 
 parsl
 ndcctools
+
+
+# -----------------------------------------------------------------------------
+# Packages below added to have imSim's dependencies (see PREOPS-3514)
+
+batoid
+batoid-rubin
+dust_extinction
+sncosmo
+rubin-sim
