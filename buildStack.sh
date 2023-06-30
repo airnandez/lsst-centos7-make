@@ -168,7 +168,18 @@ export TMPDIR=$(mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX)
 installerFlags="-B"  # Do not use binaries
 [[ ${useBinaries} == true ]] && installerFlags="-S" # Do not use sources
 
-cmd="bash lsstinstall -P -X ${tag} ${installerFlags}"
+case ${os} in
+    "linux")
+        cmd="bash lsstinstall -P -X ${tag} ${installerFlags}"
+        ;;
+    "darwin")
+        cmd="bash lsstinstall -P -T ${tag} ${installerFlags}"
+        ;;
+        *)
+        echo "${thisScript}: unsupported operating system ${os}"
+        exit 1
+esac
+
 trace $cmd ; $cmd
 if [[ ! -f "loadLSST.bash" ]]; then
     echo "${thisScript}: file 'loadLSST.bash' not found"
@@ -243,10 +254,10 @@ fi
 # version of the LSST software has been tested against.
 #
 didCreateEnvironment=false
-condaExtensionsFile="${thisScriptDir}/condaExtraPackages-${os}.txt"
-if [ -f ${condaExtensionsFile} ]; then
+condaExtendedEnvironment="${thisScriptDir}/conda-extended-$(platform).env"
+if [ -f ${condaExtendedEnvironment} ]; then
     # Filter out comments and check if there are actually packages to install
-    grep -v '^\s*#' ${condaExtensionsFile} > /dev/null 2>&1
+    grep -v '^\s*#' ${condaExtendedEnvironment} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         # Configure conda
         cmd="conda --version"
@@ -279,7 +290,7 @@ if [ -f ${condaExtensionsFile} ]; then
         fi
 
         trace "installing extra conda packages"
-        cmd="mamba --no-banner install --channel conda-forge --quiet --yes --file ${condaExtensionsFile}"
+        cmd="mamba --no-banner install --channel conda-forge --quiet --yes --file ${condaExtendedEnvironment}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
             # Could not install extra packages into the newly created environment
