@@ -179,7 +179,7 @@ mkdir -p ${untarDir}
 releaseDir=${untarDir}/${tag}
 [[ ${isExperimental} == true ]] && releaseDir="${releaseDir}-${experimentalExt}"
 sudo rm -rf ${releaseDir}
-cmd="tar --directory ${untarDir} -zxf ${localArchiveFilePath}"
+cmd="tar --warning=no-timestamp --directory ${untarDir} -zxf ${localArchiveFilePath}"
 trace "untaring file ${localArchiveFilePath}"
 trace ${cmd}; ${cmd}
 
