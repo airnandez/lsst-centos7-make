@@ -170,10 +170,10 @@ installerFlags="-B"  # Do not use binaries
 
 case ${os} in
     "linux")
-        cmd="bash lsstinstall -P -X ${tag} ${installerFlags}"
+        cmd="bash lsstinstall -P -X ${tag} -d ${installerFlags}"
         ;;
     "darwin")
-        cmd="bash lsstinstall -P -T ${tag} ${installerFlags}"
+        cmd="bash lsstinstall -P -T ${tag} -d ${installerFlags}"
         ;;
         *)
         echo "${thisScript}: unsupported operating system ${os}"
