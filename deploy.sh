@@ -134,14 +134,14 @@ fi
 
 # Ensure we are not redeploying
 if [[ ${tag} =~ ^v ]]; then
-    bucket="cc:stables/py3"
+    bucket="rubin:stables/py3"
     tag=${tag//_/.}
 elif [[ ${tag} =~ ^w ]]; then
-    bucket="cc:weeklies/py3"
+    bucket="rubin:weeklies/py3"
 elif [[ ${tag} =~ ^d ]]; then
-    bucket="cc:dailies/py3"
+    bucket="rubin:dailies/py3"
 elif [[ ${tag} =~ ^sims_ ]]; then
-    bucket="cc:weeklies/py3"
+    bucket="rubin:weeklies/py3"
 fi
 targetDir=${deployDir}/${platform}/${baseProduct}/${tag}
 [[ ${isExperimental} == true ]] && targetDir="${targetDir}-${experimentalExt}"
