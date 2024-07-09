@@ -375,8 +375,8 @@ fi
 #
 trace "creating README.txt"
 cat > ${buildDir}/README.txt <<-EOF
-LSST Software
--------------
+LSST Science Pipelines
+----------------------
 
 Product(s):          ${products}
 Tag:                 ${tag}
@@ -387,7 +387,8 @@ mamba:               $(mamba --version | grep mamba)
 conda environment:   ${baseEnv:-${CONDA_DEFAULT_ENV}}
 Python interpreter:  $(pythonDescription)
 C++ compiler:        $(cppDescription)
-Documentation:       https://sw.lsst.eu
+Documentation:       https://pipelines.lsst.io
+                     https://sw.lsst.eu
 EOF
 
 #
