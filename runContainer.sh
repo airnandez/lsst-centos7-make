@@ -72,7 +72,7 @@ usage () {
 #
 # Init
 #
-thisScript=`basename $0`
+thisScript=$(basename $0)
 
 # Directory in the host to be used by the container to build the software on
 hostVolume="/mnt"
@@ -134,7 +134,7 @@ fi
 # Path of the in-container volume: we use the first component of the target
 # directory path. For instance, if the target directory is '/cvmfs/sw.lsst.eu',
 # in the container we mount the volume at '/cvmfs'
-containerVolume=`echo ${targetDir} | awk '{split($0,a,"/"); printf "/%s", a[2]}'`
+containerVolume=$(echo ${targetDir} | awk '{split($0,a,"/"); printf "/%s", a[2]}')
 
 # Does the host volume actually exist?
 mkdir -p ${hostVolume} > /dev/null 2>&1
@@ -158,16 +158,17 @@ fi
 # Set environment variables for the container
 envVars=""
 if [ -f ~/.rclone.conf ]; then
-    RCLONE_CREDENTIALS=`cat ~/.rclone.conf | base64 -w 0`
+    RCLONE_CREDENTIALS=$(cat ~/.rclone.conf | base64 -w 0)
     envVars="-e RCLONE_CREDENTIALS=${RCLONE_CREDENTIALS}"
 fi
 
 # Run the container
-imageName="airnandez/lsst-centos7-make"
-containerName=`echo ${imageName} | awk '{split($0,a,"/"); printf "%s", a[2]}'`
-docker run --name ${containerName}-${baseProduct}-${tag}  \
-           --volume ${hostVolume}:${containerVolume}      \
-           ${mode}                                        \
-           ${envVars}                                     \
-           ${imageName}                                   \
-           ${cmd}
+imageName="airnandez/lsst-almalinux-build"
+containerName=$(echo ${imageName} | cut -d '/' -f 2)
+docker run \
+    --name ${containerName}-${baseProduct}-${tag}  \
+    --volume ${hostVolume}:${containerVolume}      \
+    ${mode}                                        \
+    ${envVars}                                     \
+    ${imageName}                                   \
+    ${cmd}

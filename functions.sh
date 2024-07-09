@@ -11,6 +11,8 @@ linuxDescription() {
     rel=$(command -v lsb_release)
     if [[ ${rel} != "" ]]; then
         description=$(${rel} -d | cut -f 2-)
+    elif [[ -f /etc/os-release ]]; then
+        description=$(grep PRETTY_NAME /etc/os-release | cut -d '=' -f 2 | sed -e 's|"||g')
     elif [[ -f /etc/redhat-release ]]; then
         description=$(head -1 /etc/redhat-release)
     fi
@@ -26,6 +28,8 @@ linuxDistribution() {
     rel=$(command -v lsb_release)
     if [[ ${rel} != "" ]]; then
         distrib=$(${rel} -d | awk '{print $2}')
+    elif [[ -f /etc/os-release ]]; then
+        distrib=$(grep PRETTY_NAME /etc/os-release | cut -d '=' -f 2 | sed -e 's|"||g' | cut -d ' ' -f 1)
     elif [[ -f /etc/redhat-release ]]; then
         distrib=$(head -1 /etc/redhat-release | awk '{print $1}')
     fi

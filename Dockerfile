@@ -1,4 +1,4 @@
-FROM centos:centos7
+FROM almalinux:9.4
 
 LABEL maintainer="Fabio Hernandez <fabio@in2p3.fr>" \
 	keywords="CernVM-FS,cvmfs,lsst,binary distribution" \
@@ -6,16 +6,20 @@ LABEL maintainer="Fabio Hernandez <fabio@in2p3.fr>" \
 distribution via CernVM-FS"
 
 #
+# Update the operating system
+#
+RUN yum update --quiet --assumeyes
+
+#
 # Install pre-requisites for building the stack
 # Reference: https://pipelines.lsst.io/install/prereqs.html#system-prerequisites
 #
-RUN yum install -q -y patch diffutils git
+RUN yum install --quiet --assumeyes patch diffutils git
 
 #
 # Install additional packages necessary for this build system
 #
-RUN yum install -q -y redhat-lsb unzip
-RUN yum install -q -y centos-release-scl
+RUN yum install --quiet --assumeyes unzip
 
 #
 # Create non-privileged user
