@@ -1,13 +1,24 @@
 #!/bin/bash
 
-# Returns the description of the linux distribution, e.g. 
+#
+# Constants
+#
+
+# Name of the rclone endpoint and bucket to upload to and download from
+# the archive.
+readonly bucket="rubin:software"
+readonly experimentalExt="dev"
+readonly cvmfsRepoName="sw.lsst.eu"
+
+
+# Returns the description of the linux distribution, e.g.
 #    "CentOS Linux release 7.3.1611 (Core)"
 #    "Ubuntu 14.04.5 LTS"
 linuxDescription() {
     local description="unknown"
     # Try first the lsb_release command. It returns:
     #    Description:   Ubuntu 14.04.5 LTS
-    #    Description:   CentOS Linux release 7.4.1708 (Core) 
+    #    Description:   CentOS Linux release 7.4.1708 (Core)
     rel=$(command -v lsb_release)
     if [[ ${rel} != "" ]]; then
         description=$(${rel} -d | cut -f 2-)
@@ -16,7 +27,7 @@ linuxDescription() {
     elif [[ -f /etc/redhat-release ]]; then
         description=$(head -1 /etc/redhat-release)
     fi
-    echo $description
+    echo "${description}"
 }
 
 # Returns the linux distribution, e.g. "CentOS", "Ubuntu"
@@ -24,7 +35,7 @@ linuxDistribution() {
     local distrib="unknown"
     # Try first the lsb_release command. It returns:
     #    Distribution:  Ubuntu 14.04.5 LTS
-    #    Distribution:  CentOS Linux release 7.4.1708 (Core) 
+    #    Distribution:  CentOS Linux release 7.4.1708 (Core)
     rel=$(command -v lsb_release)
     if [[ ${rel} != "" ]]; then
         distrib=$(${rel} -d | awk '{print $2}')
@@ -33,22 +44,45 @@ linuxDistribution() {
     elif [[ -f /etc/redhat-release ]]; then
         distrib=$(head -1 /etc/redhat-release | awk '{print $1}')
     fi
-    echo $distrib
+    echo "${distrib}"
 }
 
 # Returns the operating system, e.g. "linux", "darwin"
 osName() {
-    echo $(uname -s | tr [:upper:] [:lower:])
+    echo $(uname -s | tr '[:upper:]' '[:lower:]')
+}
+
+# Returns the architecture, e.g. "x86_64", "arm64", "aarch64"
+architecture() {
+    echo $(uname -m | tr '[:upper:]' '[:lower:]')
 }
 
 # Returns the execution platform, e.g. linux-x86_64, darwin-x86_64
 platform() {
-    # Get the UNIX flavor, e.g. "linux", "darwin"
-    local os=$(osName)
-    # Get the kernel architecture, e.g. "x86_64"
-    local arch=$(uname -m | tr [:upper:] [:lower:])
-    echo ${os}-${arch}
+    echo "$(osName)-$(architecture)"
 }
+
+# Returns the specific distribution of the operating system and the architecture, e.g. almalinux-aarch64, rhel-x86_64, darwin-x86_64
+osDistribArch() {
+    local distrib="unknown"
+    case $(osName) in
+        "darwin")
+            distrib="darwin"
+            ;;
+
+        "linux")
+            if [[ -f "/etc/os-release" ]]; then
+                # File '/etc/os-release' contains a line of the form 'ID="almalinux"'. Extract the Linux identifier.
+                distrib=$(cat /etc/os-release | awk -F '=' '$1=="ID" {print $2}' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')
+            fi
+            ;;
+
+        *)
+            ;;
+    esac
+    echo "${distrib}-$(architecture)"
+}
+
 
 # Returns the description of the Python interpreter, e.g. "Python 3.6.2 :: Continuum Analytics, Inc."
 pythonDescription() {
@@ -61,7 +95,7 @@ cppDescription() {
     if [[ ${MACOSX_DEPLOYMENT_TARGET} != "" ]]; then
         description="${description} [MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET}"]"
     fi
-    echo ${description}
+    echo "${description}"
 }
 
 # Returns a description of the operating system
@@ -81,29 +115,31 @@ osDescription() {
         *)
             ;;
     esac
-    echo ${description} $(uname -s -r -v -m -p)
+    echo "${description} $(uname -s -r -v -m -p)"
 }
 
 # Prints a message prefixed with a time stamp of the form 2018-01-02 13:14:15"
 trace() {
     timestamp=$(date -u +"%Y-%m-%d %H:%M:%SZ")
-    echo -e $timestamp $*
+    echo -e "$timestamp" "$@"
 }
 
-# Returns true if the argument tag is valid
+# Returns true if the argument tag is a valid one
 isValidTag() {
     local tag=$1
-    local releaseDir=$(getReleaseDir ${tag})
+    local releaseDir=$(getReleaseDir ${tag} false)
     if [[ -z ${releaseDir} ]]; then
         return 1
     fi
     return 0
 }
 
-# Returns the name of the target release directory (based on a product tag)
-# or the empty string if the format of the tag cannot be interpreted
+# Returns the name of the target release directory, computed from the
+# product tag and the experimental flag, e.g. 'w_2024_35', 'w_2024_35-dev'
+# or the empty string if the format of the tag cannot be interpreted.
 getReleaseDir() {
     local tag=$1
+    local experimental=$2
     local releaseDir=""
     if [[ ${tag} =~ ^v[0-9]+_[0-9]+.*$ ]]; then
         # Stable release tag of the form 'v12_1'
@@ -125,5 +161,8 @@ getReleaseDir() {
         # Could not understand the tag format
         releaseDir=""
     fi
-    echo ${releaseDir}
+    if [[ -n ${releaseDir} ]] && [[ ${experimental} == true ]]; then
+        releaseDir="${releaseDir}-dev"
+    fi
+    echo "${releaseDir}"
 }

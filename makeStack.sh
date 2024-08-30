@@ -2,7 +2,7 @@
 
 #-----------------------------------------------------------------------------#
 # Description:                                                                #
-#    use this script to build a given version of the LSST software framework. # 
+#    use this script to build a given version of the LSST software framework. #
 #    It is designed to be used either within the context of a Docker container#
 #    or otherwise.                                                            #
 #    The result of the invocation of this script is a .tar.gz file with the   #
@@ -47,7 +47,7 @@
 #                                                                             #
 #        -Z  allow EUPS to use binary tarballs (if available)                 #
 #                                                                             #
-#        -X  mark the build directory as experimental                         #          
+#        -X  mark the build directory as experimental                         #
 #                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
@@ -59,7 +59,7 @@
 #
 # Import functions
 #
-source 'functions.sh'
+source functions.sh
 
 #
 # Init
@@ -70,23 +70,23 @@ os=$(osName)
 if [[ $os == "darwin" ]]; then
     user=$USER
 fi
-targetDir="/cvmfs/sw.lsst.eu/$(platform)"
+targetDir="/cvmfs/${cvmfsRepoName}/$(osDistribArch)"
 baseProduct="lsst_distrib"
 useBinaries=false
 isExperimental=false
-experimentalExt="dev"
+doUpload=true
 
 #
 # usage()
 #
-usage () { 
-    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-p <products>] [-Z] [-X] -t <tag>"
-} 
+usage () {
+    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-p <products>] [-Z] [-X] [-U] -t <tag>"
+}
 
 #
 # Parse command line arguments
 #
-while getopts d:t:u:B:p:x:ZX optflag; do
+while getopts d:t:u:B:p:x:UXZ optflag; do
     case $optflag in
         d)
             targetDir=${OPTARG}
@@ -103,11 +103,19 @@ while getopts d:t:u:B:p:x:ZX optflag; do
         p)
             optProducts=${OPTARG}
             ;;
-        Z)
-            useBinaries=true
+        U)
+            doUpload=false
             ;;
         X)
             isExperimental=true
+            ;;
+        Z)
+            useBinaries=true
+            ;;
+        *)
+            echo "${thisScript}: unexpected option ${optflag}"
+            usage
+            exit 1
             ;;
     esac
 done
@@ -119,16 +127,15 @@ if [[ -z "${tag}" ]]; then
 fi
 
 #
-# Is the provided tag a stable release or a weekly release?
+# Is the provided tag valid?
 #
-releaseDir=$(getReleaseDir ${tag})
-if [[ -z ${releaseDir} ]]; then
+if ! isValidTag ${tag}; then
     echo "${thisScript}: '${tag}' is not a recognized version tag"
     exit 1
 fi
 
-# If this is a build for an experimental release add a marker to the directory
-[[ ${isExperimental} == true ]] && releaseDir="${releaseDir}-${experimentalExt}"
+# Retreive the release directory where to build this release
+releaseDir=$(getReleaseDir ${tag} ${isExperimental})
 
 #
 # Create the build directory: the build directory depends on the specified target
@@ -146,26 +153,23 @@ mkdir -p ${buildDir}
 #
 # Create scratch directory
 #
-scratchDir=${targetDir}/"scratch"
+scratchDir="${targetDir}/scratch"
 mkdir -p ${scratchDir}
 export TMPDIR=${scratchDir}
 
 #
 # Create archive directory
 #
-archiveDir=${targetDir}/"archives"
+archiveDir="${targetDir}/archives"
 mkdir -p ${archiveDir}
 
 #
 # Create log directory
 #
-logDir=${targetDir}/"log"
+logDir="${targetDir}/log"
 mkdir -p ${logDir}
-logFile=${logDir}/${baseProduct}-${tag}.log
-if [[ ${isExperimental} == true ]]; then
-   logFile=${logDir}/${baseProduct}-${tag}-${experimentalExt}.log
-fi
-rm -rf ${logFile}
+logFile=${logDir}/${baseProduct}-${releaseDir}.log
+rm -f ${logFile}
 touch ${logFile}
 
 #
@@ -177,15 +181,17 @@ chown -R ${user} ${buildDir} ${scratchDir} ${archiveDir} ${logDir}
 # Launch installation
 #
 products=${baseProduct}
-if [[ ! -z "${optProducts}" ]]; then
+if [[ -n "${optProducts}" ]]; then
     products=${products},${optProducts}
 fi
 [[ ${useBinaries} == true ]] && binaryFlag="-Z"
+[[ ${doUpload} == false ]] && uploadFlag="-U"
+
 if [[ $(whoami) == ${user} ]]; then
-    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} ${binaryFlag} -t ${tag}) < /dev/null  >> ${logFile}  2>&1
+    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} ${binaryFlag} ${uploadFlag} -t ${tag}) < /dev/null  >> ${logFile}  2>&1
     rc=$?
 else
-    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} ${binaryFlag} -t ${tag}") < /dev/null  >> ${logFile}  2>&1
+    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} ${binaryFlag} ${uploadFlag} -t ${tag}") < /dev/null  >> ${logFile}  2>&1
     rc=$?
 fi
 

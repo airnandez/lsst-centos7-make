@@ -2,7 +2,7 @@
 
 #-----------------------------------------------------------------------------#
 # Description:                                                                #
-#    use this script to build a given version of the LSST software framework. # 
+#    use this script to build a given version of the LSST software framework. #
 #    It is designed to be used either within the context of a Docker container#
 #    or otherwise.                                                            #
 #    The result of the invocation of this script is a .tar.gz file with the   #
@@ -25,6 +25,8 @@
 #                                                                             #
 #        <tag> is the tag of the EUPS product to be installed.                #
 #                                                                             #
+#        -U  don't upload resulting archive file                              #
+#                                                                             #
 #        -Z  allow EUPS to use binary tarballs (if available)                 #
 #                                                                             #
 # Author:                                                                     #
@@ -44,17 +46,17 @@ source 'functions.sh'
 #
 thisScript=$(basename $0)
 thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-user=$(whoami)
 os=$(osName)
 TMPDIR=${TMPDIR:-/tmp}
 useBinaries=false
-pythonVersion="3"
+doUpload=true
+doCompressArchive=true
 
 #
 # Routines
 #
-usage () { 
-    echo "Usage: ${thisScript}  -p products  -b <build directory>  -a <archive directory> [-Z] -t <tag>"
+usage () {
+    echo "Usage: ${thisScript}  -p <products>  -b <build directory>  -a <archive directory> [-Z] [-U] -t <tag>"
 }
 
 # Start execution
@@ -63,22 +65,30 @@ trace "$0" "$*"
 #
 # Parse and verify command line arguments
 #
-while getopts p:b:a:t:Z optflag; do
+while getopts p:b:a:t:UZ optflag; do
     case $optflag in
         p)
             products=${OPTARG//,/ }
             ;;
         b)
-            buildDir=${OPTARG}
+            buildDir=$(readlink -f "${OPTARG}")
             ;;
         a)
-            archiveDir=${OPTARG}
+            archiveDir=$(readlink -f "${OPTARG}")
             ;;
         t)
             tag=${OPTARG}
             ;;
         Z)
             useBinaries=true
+            ;;
+        U)
+            doUpload=false
+            ;;
+        *)
+            echo "${thisScript}: unexpected option ${optflag}"
+            usage
+            exit 1
             ;;
     esac
 done
@@ -100,7 +110,7 @@ if [[ ! -d "${archiveDir}" ]]; then
 fi
 
 if [[ ${UID} = 0 ]]; then
-    echo "${thisScript}: cannot run as root."
+    echo "${thisScript}: cannot run as root"
     exit 1
 fi
 
@@ -108,26 +118,15 @@ fi
 #
 # Is the provided tag a stable version or a weekly version?
 #
-suffix=$(getReleaseDir ${tag})
-if [[ -z ${suffix} ]]; then
+if ! $(isValidTag ${tag}); then
     echo "${thisScript}: '${tag}' is not a recognized version tag"
     exit 1
 fi
 
 
 #
-# Set the environment for building this release
+# Download the installer
 #
-# From w_2020_18 the compilers needed for building and running lsst_distrib
-# are included in the conda distribution, so we don't need a devtoolset
-# TODO: disable/enable the devtools in a more dynamic way
-doEnableDevTools=false
-if [[ ${doEnableDevTools} = true && -f ${HOME}/enableDevtoolset.bash ]]; then
-    requiredDevToolSet=$(scl -l | tail -1)
-    trace "activating ${requiredDevToolSet}"
-    source ${HOME}/enableDevtoolset.bash ${requiredDevToolSet}
-fi
-
 url="https://raw.githubusercontent.com/lsst/lsst/main/scripts/lsstinstall"  # or use redirector https://ls.st/lsstinstall
 status=$(curl --silent --head ${url} | head -n 1)
 if [[ ${status} != HTTP*200* ]]; then
@@ -164,7 +163,8 @@ rm -rf ${HOME}/.conda ${HOME}/.condarc ${HOME}/.mambarc ${HOME}/.astropy ${HOME}
 # Bootstrap the installation. After executing the bootstrap script, there must
 # be a file 'loadLSST.bash'
 #
-export TMPDIR=$(mktemp -d $TMPDIR/${suffix}-build-XXXXXXXXXX)
+releaseDir=$(basename ${buildDir})
+export TMPDIR=$(mktemp -d $TMPDIR/${releaseDir}-build-XXXXXXXXXX)
 installerFlags="-B"  # Do not use binaries
 [[ ${useBinaries} == true ]] && installerFlags="-S" # Do not use sources
 
@@ -175,7 +175,7 @@ case ${os} in
     "darwin")
         cmd="bash lsstinstall -P -T ${tag} -d ${installerFlags}"
         ;;
-        *)
+    *)
         echo "${thisScript}: unsupported operating system ${os}"
         exit 1
 esac
@@ -327,27 +327,6 @@ if [[ -n "${jupyterCmd}" ]]; then
 fi
 
 #
-# Perform OS-specific post-installation
-#
-if [[ ${os} == "linux" ]]; then
-    #
-    # Extend the loadLSST.bash to enable devtoolset if necessary
-    #
-    if [[ ${doEnableDevTools} = true ]]; then
-        trace "modifying loadLSST.bash for devtoolset"
-        if [[ -f ${HOME}/enableDevtoolset.bash ]]; then
-            cp ${HOME}/enableDevtoolset.bash ${buildDir}
-            chmod ugo-x ${buildDir}/enableDevtoolset.bash
-            cat >> loadLSST.bash <<-EOF
-
-# Enable the C++ compiler runtime required by this release, if available (see README.txt for details)
-[[ -f \${LSST_HOME}/enableDevtoolset.bash ]] && source \${LSST_HOME}/enableDevtoolset.bash ${requiredDevToolSet}
-EOF
-       fi
-    fi
-fi
-
-#
 # Create adapted versions of loadLSST.*sh for activating the extended conda environment by default (if any)
 # For instance, replace the line
 #    export LSST_CONDA_ENV_NAME=${LSST_CONDA_ENV_NAME:-lsst-scipipe-0.7.0}
@@ -409,41 +388,48 @@ if [[ ${buildDir} =~ /cvmfs ]]; then
     done
 fi
 
-#
-# Change permissions for this installation
-#
-# trace "modifying permissions under ${buildDir}"
-# cmd="chmod -R u-w,g-w,o-w ${buildDir}"
-# trace $cmd ; $cmd
 
 #
 # Make archive file
 #
 trace "building archive file"
+archiveExtension=".tar"
+if [[ ${doCompressArchive} == true ]]; then
+    extraTarOpts=" -z "
+    archiveExtension="${archiveExtension}.gz"
+fi
+tarFileName="${releaseDir}.${archiveExtension}" # e.g. w_2024_35.tar.gz, w_2024_35-dev.tar.gz or v27.0.0.tar.gz
+archiveFile=${archiveDir}/${tarFileName}
 tarCmd="tar"
 if [[ ${os} == "darwin" ]]; then
     tarCmd="gnutar"
 fi
-tarFileName=$(echo ${buildDir}-py${pythonVersion}-$(platform).tar.gz | cut -b 2- | sed -e 's|/|__|g')
-archiveFile=${archiveDir}/${tarFileName}
-cd ${buildDir}/..
-cmd="${tarCmd} --hard-dereference -zcf ${archiveFile} ./$(basename ${buildDir})"
+# TODO: remove the 'echo' below
+cmd="echo ${tarCmd} --directory $(dirname ${buildDir}) --hard-dereference ${extraTarOpts} -cf ${archiveFile} $(basename ${buildDir})"
 trace $cmd ; $cmd
 if [ $? != 0 ]; then
     echo "${thisScript}: error creating archive ${archiveFile}"
     exit 1
 fi
 
+
 #
 # Upload archive file
 #
-uploadExe="${thisScriptDir}/upload.sh"
-if [[ -x "${uploadExe}" ]]; then
-    trace "uploading archive file..."
-    cmd="${uploadExe} ${archiveFile}"
-    trace $cmd; $cmd
+if [[ ${doUpload} == true ]]; then
+    # Compute the destination. It is of the form
+    #    rubin:software/cvmfs/sw.lsst.eu/almalinux-x86_64/lsst_distrib/w_2024_35.tar.gz
+    destination="${bucket}$(dirname ${buildDir})/${tarFileName}"
+    uploadExe="${thisScriptDir}/upload.sh"
+    if [[ -x "${uploadExe}" ]]; then
+        trace "uploading archive file ${archiveFile} to ${destination}"
+        cmd="${uploadExe} ${archiveFile} ${destination}"
+        trace $cmd; $cmd
+    else
+        trace "file ${uploadExe} not executable or not found"
+    fi
 else
-    trace "file ${uploadExe} not executable or not found"
+    trace "upload disabled: skipping upload of of ${archiveFile}"
 fi
 
 #

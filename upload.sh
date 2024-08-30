@@ -1,20 +1,27 @@
 #!/bin/bash 
 
 #
+# Import functions
+#
+source 'functions.sh'
+
+#
 # Init
 #
 thisScript=$(basename $0)
-os=$(uname -s | tr [:upper:] [:lower:])
+os=$(osName)
 
 usage () { 
-    echo "Usage: ${thisScript} <archive file>"
+    echo "Usage: ${thisScript} <archive file name> <destination>"
+    echo "       example: ${thisScript} /path/to/w_2024_35.tar.gz /cvmfs/sw.lsst.eu/almalinux-x86_64/lsst_distrib/w_2024_35.tar.gz"
 }
 
 #
 # Archive file name needs to be received as argument
 #
 archiveFile=$1
-if [ -z "${archiveFile}" ]; then
+destination=$2
+if [ -z "${archiveFile}" ] || [ -z "${destination}" ]; then
     usage
     exit 1
 fi
@@ -47,9 +54,23 @@ fi
 #
 # Download rclone executable
 #
-rcloneUrl="https://downloads.rclone.org/rclone-current-linux-amd64.zip"
-if [ ${os} == "darwin" ]; then
-    case $(uname -m) in
+if [ ${os} == "linux" ]; then
+    case $(architecture) in
+        "x86_64")
+            rcloneUrl="https://downloads.rclone.org/rclone-current-linux-amd64.zip"
+            ;;
+
+        "aarch64")
+            rcloneUrl="https://downloads.rclone.org/rclone-current-linux-arm64.zip"
+            ;;
+
+        *)
+            echo "${thisScript}: could not determine what rclone release to download for this host architecture"
+            exit 1
+            ;;
+    esac
+elif [ ${os} == "darwin" ]; then
+    case $(architecture) in
         "x86_64")
             rcloneUrl="https://downloads.rclone.org/rclone-current-osx-amd64.zip"
             ;;
@@ -89,7 +110,7 @@ chmod u+x ${rcloneExe}
 # Create a rclone.conf file with appropriate permissions
 #
 if [ -f "$HOME/.rclone.conf" ]; then
-    rcloneConfFile="$HOME/.rclone.conf"
+    rcloneConfFile="${HOME}/.rclone.conf"
     eraseRcloneConf="false"
 else
     eraseRcloneConf="true"
@@ -98,30 +119,10 @@ else
 fi
 
 #
-# Upload the archive file to its destination bucket.
-# We use several buckets: 'stables' for stable releases, 'weeklies' for weekly releases
-# and 'dailies' for daily releases.
-# Archive files names with a pattern such as 'w_2018_14' are uploaded to 'weeklies', 
-# archive files named with a pattern like 'v15' are uploaded to 'stables' and
-# archive file names with a pattern like 'd_2021_xx_xx' are uploaded to 'dailies'
-#
-archiveBasename=$(basename ${archiveFile})
-if [[ ${archiveBasename} =~ \.*v[0-9].*- ]]; then
-    bucket="rubin:stables"
-elif [[ ${archiveBasename} =~ \.*w_[0-9]{4}_[0-9]{2}.*- ]]; then
-    bucket="rubin:weeklies"
-elif [[ ${archiveBasename} =~ \.*sims_.*- ]]; then
-    bucket="rubin:weeklies"
-elif [[ ${archiveBasename} =~ \.*d_[0-9]{4}_[0-9]{2}_[0-9]{2}.*- ]]; then
-    bucket="rubin:dailies"
-fi
-if [[ ${archiveBasename} =~ \.*-py3-\.* ]]; then
-    destination="${bucket}/py3"
-else
-    destination="${bucket}/py2"
-fi
+# Upload the archive file to its destination objet.
 
-cmd="${rcloneExe} -I --config ${rcloneConfFile} copy ${archiveFile} ${destination}"
+# TODO: remove echo below
+cmd="echo ${rcloneExe} -I --config ${rcloneConfFile} copyto ${archiveFile} ${destination}"
 echo $cmd
 $cmd
 rc=$?

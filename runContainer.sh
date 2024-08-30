@@ -3,7 +3,7 @@
 #-----------------------------------------------------------------------------#
 # Description:                                                                #
 #    use this script to build the specified version of the LSST software      #
-#    framework in the context of a Docker container.                          # 
+#    framework in the context of a Docker container.                          #
 #    It is designed to be used either within the context of a Docker container#
 # Usage:                                                                      #
 #                                                                             #
@@ -50,6 +50,8 @@
 #                                                                             #
 #        -X  mark the build directory as experimental                         #
 #                                                                             #
+#        -U  don't upload archive file to archive                             #
+#                                                                             #
 # Author:                                                                     #
 #    Fabio Hernandez (fabio.in2p3.fr)                                         #
 #    IN2P3 / CNRS computing center                                            #
@@ -65,9 +67,9 @@ source 'functions.sh'
 #
 # usage()
 #
-usage () { 
-    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-B <base product>] [-p <products>] [-x <extension>] [-Z] [-X] -t <tag>"
-} 
+usage () {
+    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-B <base product>] [-p <products>] [-x <extension>] [-Z] [-X] [-U] -t <tag>"
+}
 
 #
 # Init
@@ -79,7 +81,7 @@ hostVolume="/mnt"
 mkdir -p ${hostVolume}
 
 # Default target directory to build the software in (in container namespace)
-targetDir="/cvmfs/sw.lsst.eu/$(platform)"
+targetDir="/cvmfs/${cvmfsRepoName}/$(osDistribArch)"
 
 # By default, run the container in detached mode
 interactive=false
@@ -93,34 +95,45 @@ useBinaries=false
 # Is this a build for an experimental version?
 isExperimental=false
 
+# Should we upload the archive file?
+doUpload=true
+
 #
 # Parse command line arguments
 #
-while getopts d:t:v:ip:B:ZX optflag; do
+while getopts B:d:p:it:Uv:XZ optflag; do
     case $optflag in
+        B)
+            baseProduct=${OPTARG}
+            ;;
         d)
             targetDir=${OPTARG}
             ;;
-        t)
-            tag=${OPTARG}
-            ;;
-        v)
-            hostVolume=${OPTARG}
-            ;;
-        i)  
+        i)
             interactive=true
-            ;;
-        B)
-            baseProduct=${OPTARG}
             ;;
         p)
             optProducts=${OPTARG}
             ;;
-        Z)
-            useBinaries=true
+        t)
+            tag=${OPTARG}
+            ;;
+        U)
+            doUpload=false
+            ;;
+        v)
+            hostVolume=${OPTARG}
             ;;
         X)
             isExperimental=true
+            ;;
+        Z)
+            useBinaries=true
+            ;;
+        *)
+            echo "${thisScript}: unexpected option ${optflag}"
+            usage
+            exit 1
             ;;
     esac
 done
@@ -152,13 +165,14 @@ else
     mode="-d  --rm"
     [[ ${useBinaries} == true ]] && binaryFlag="-Z"
     [[ ${isExperimental} == true ]] && experimentalFlag="-X"
-    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} ${binaryFlag} ${experimentalFlag} -t ${tag}"
+    [[ ${doUpload} == false ]] && uploadFlag="-U"
+    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} ${binaryFlag} ${experimentalFlag} ${uploadFlag} -t ${tag}"
 fi
 
 # Set environment variables for the container
 envVars=""
 if [ -f ~/.rclone.conf ]; then
-    RCLONE_CREDENTIALS=$(cat ~/.rclone.conf | base64 -w 0)
+    RCLONE_CREDENTIALS=$(base64 -w 0 < ~/.rclone.conf)
     envVars="-e RCLONE_CREDENTIALS=${RCLONE_CREDENTIALS}"
 fi
 
@@ -166,9 +180,9 @@ fi
 imageName="airnandez/lsst-almalinux-build"
 containerName=$(echo ${imageName} | cut -d '/' -f 2)
 docker run \
-    --name ${containerName}-${baseProduct}-${tag}  \
-    --volume ${hostVolume}:${containerVolume}      \
-    ${mode}                                        \
-    ${envVars}                                     \
-    ${imageName}                                   \
+    --name "${containerName}-${baseProduct}-${tag}"  \
+    --volume "${hostVolume}:${containerVolume}"      \
+    ${mode}                                          \
+    ${envVars}                                       \
+    ${imageName}                                     \
     ${cmd}
