@@ -7,8 +7,8 @@
 #    It is designed to be used either within the context of a Docker container#
 # Usage:                                                                      #
 #                                                                             #
-#    runContainer.sh [-v <host volume>]  [-d <target directory>]  [-i]        #
-#                    [-B <base product>] [-p products] [-Z] [-X] -t <tag>     #
+#    runContainer.sh [-v <host volume>] [-d <target directory>] [-i]          #
+#                    [-B <base product>] [-Z] [-X] -t <tag>                   #
 #                                                                             #
 #    where:                                                                   #
 #        <host volume> is the storage volume in the host where the container  #
@@ -37,14 +37,8 @@
 #                                                                             #
 #        -i  run the container in interactive mode.                           #
 #                                                                             #
-#        <base product> is the identifier of the base product to install,     #
-#            such as "lsst_distrib" or "lsst_sims".                           #
-#             Default: "lsst_distrib"                                         #
-#                                                                             #
-#        <products> is the comma-separated list of EUPS products to be        #
-#            installed in addition to the base product, which is always       #
-#            installed first.                                                 #
-#            Default: ""                                                      #
+#        <base product> is the identifier of the base product to install.     #
+#            Default: "lsst_distrib"                                          #
 #                                                                             #
 #        -Z  allow EUPS to use binary tarballs (if available)                 #
 #                                                                             #
@@ -65,23 +59,22 @@
 source 'functions.sh'
 
 #
-# usage()
-#
-usage () {
-    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-B <base product>] [-p <products>] [-x <extension>] [-Z] [-X] [-U] -t <tag>"
-}
-
-#
 # Init
 #
 thisScript=$(basename $0)
 
-# Directory in the host to be used by the container to build the software on
+#
+# Usage
+#
+function usage () {
+    echo "Usage: ${thisScript} [-v <host volume>] [-d <target directory>] [-i] [-B <base product>] [-Z] [-X] [-U] -t <tag>"
+}
+
+# Directory in the host exposed to the container to build the software on
 hostVolume="/mnt"
-mkdir -p ${hostVolume}
 
 # Default target directory to build the software in (in container namespace)
-targetDir="/cvmfs/${cvmfsRepoName}/$(osDistribArch)"
+targetDir="/cvmfs/${cvmfsRepoName}"
 
 # By default, run the container in detached mode
 interactive=false
@@ -101,19 +94,16 @@ doUpload=true
 #
 # Parse command line arguments
 #
-while getopts B:d:p:it:Uv:XZ optflag; do
+while getopts B:d:it:Uv:XZ optflag; do
     case $optflag in
         B)
             baseProduct=${OPTARG}
             ;;
         d)
-            targetDir=${OPTARG}
+            targetDir=$(readlink -f "${OPTARG}")
             ;;
         i)
             interactive=true
-            ;;
-        p)
-            optProducts=${OPTARG}
             ;;
         t)
             tag=${OPTARG}
@@ -122,7 +112,7 @@ while getopts B:d:p:it:Uv:XZ optflag; do
             doUpload=false
             ;;
         v)
-            hostVolume=${OPTARG}
+            hostVolume=$(readlink -f "${OPTARG}")
             ;;
         X)
             isExperimental=true
@@ -139,9 +129,16 @@ while getopts B:d:p:it:Uv:XZ optflag; do
 done
 shift $((OPTIND - 1))
 
+# Check we have a product tag to build
 if [[ -z "${tag}" ]]; then
     usage
     exit 0
+fi
+
+# Does the host volume actually exist?
+if [[ ! -d ${hostVolume} ]]; then
+    echo "${thisScript}: ${hostVolume} does not exist"
+    exit 1
 fi
 
 # Path of the in-container volume: we use the first component of the target
@@ -149,31 +146,20 @@ fi
 # in the container we mount the volume at '/cvmfs'
 containerVolume=$(echo ${targetDir} | awk '{split($0,a,"/"); printf "/%s", a[2]}')
 
-# Does the host volume actually exist?
-mkdir -p ${hostVolume} > /dev/null 2>&1
-df ${hostVolume} > /dev/null 2>&1
-if [ $? != 0 ]; then
-    echo "${thisScript}: ${hostVolume} does not exist"
-    exit 1
-fi
-
 if [ "${interactive}" == true ]; then
-    mode="-it"
+    runMode="--interactive --tty"
     cmd="/bin/bash"
 else
-    productsFlag=${optProducts:+"-p ${optProducts}"}
-    mode="-d  --rm"
+    runMode="--detach  --rm"
     [[ ${useBinaries} == true ]] && binaryFlag="-Z"
     [[ ${isExperimental} == true ]] && experimentalFlag="-X"
     [[ ${doUpload} == false ]] && uploadFlag="-U"
-    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${productsFlag} ${binaryFlag} ${experimentalFlag} ${uploadFlag} -t ${tag}"
+    cmd="/bin/bash makeStack.sh -d ${targetDir} -B ${baseProduct} ${binaryFlag} ${experimentalFlag} ${uploadFlag} -t ${tag}"
 fi
 
-# Set environment variables for the container
-envVars=""
+# Set environment variables to pass to the container
 if [ -f ~/.rclone.conf ]; then
-    RCLONE_CREDENTIALS=$(base64 -w 0 < ~/.rclone.conf)
-    envVars="-e RCLONE_CREDENTIALS=${RCLONE_CREDENTIALS}"
+    envVars="-e RCLONE_CREDENTIALS=$(base64 -w 0 < ~/.rclone.conf)"
 fi
 
 # Run the container
@@ -182,7 +168,7 @@ containerName=$(echo ${imageName} | cut -d '/' -f 2)
 docker run \
     --name "${containerName}-${baseProduct}-${tag}"  \
     --volume "${hostVolume}:${containerVolume}"      \
-    ${mode}                                          \
+    ${runMode}                                       \
     ${envVars}                                       \
     ${imageName}                                     \
     ${cmd}

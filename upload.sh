@@ -1,23 +1,19 @@
-#!/bin/bash 
+#!/bin/bash
 
 #
 # Import functions
 #
-source 'functions.sh'
-
-#
-# Init
-#
 thisScript=$(basename $0)
-os=$(osName)
+thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${thisScriptDir}/functions.sh"
 
-usage () { 
+function usage () {
     echo "Usage: ${thisScript} <archive file name> <destination>"
-    echo "       example: ${thisScript} /path/to/w_2024_35.tar.gz /cvmfs/sw.lsst.eu/almalinux-x86_64/lsst_distrib/w_2024_35.tar.gz"
+    echo "       example: ${thisScript} /path/to/w_2024_35.tar.gz rubin:software/cvmfs/sw.lsst.eu/almalinux-x86_64/lsst_distrib/w_2024_35.tar.gz"
 }
 
 #
-# Archive file name needs to be received as argument
+# Parse command line
 #
 archiveFile=$1
 destination=$2
@@ -45,6 +41,7 @@ fi
 USER=${USER:-$(id -un)}
 TMPDIR=${TMPDIR:-"/tmp"}
 mkdir -p ${TMPDIR}
+os=$(osName)
 if [ ${os} == "darwin" ]; then
     TMPDIR=$(mktemp -d ${TMPDIR}/${USER}.upload.XXXXX)
 else
@@ -85,8 +82,9 @@ elif [ ${os} == "darwin" ]; then
             ;;
     esac
 fi
+
 rcloneZipFile=${TMPDIR}/rclone-current.zip
-rm -rf ${rcloneZipFile}
+rm -f ${rcloneZipFile}
 curl -s -L -o ${rcloneZipFile} ${rcloneUrl}
 if [ $? -ne 0 ]; then
     echo "${thisScript}: error downloading rclone"
@@ -101,7 +99,7 @@ rm -rf ${unzipDir}
 unzip -qq -d ${unzipDir} ${rcloneZipFile}
 rcloneExe=$(find ${unzipDir} -name rclone -type f -print)
 if [[ ! -f ${rcloneExe} ]]; then
-    echo "${thisScript}: could not find rclone executable at ${rcloneExe}"
+    trace "could not find rclone executable at ${rcloneExe}"
     exit 1
 fi
 chmod u+x ${rcloneExe}
@@ -120,17 +118,15 @@ fi
 
 #
 # Upload the archive file to its destination objet.
-
-# TODO: remove echo below
-cmd="echo ${rcloneExe} -I --config ${rcloneConfFile} copyto ${archiveFile} ${destination}"
-echo $cmd
-$cmd
+#
+cmd="${rcloneExe} -I --config ${rcloneConfFile} copyto ${archiveFile} ${destination}"
+trace $cmd ; $cmd
 rc=$?
 
 #
 # Remove rclone config file, if needed
 #
-if [ ${eraseRcloneConf} = "true" ]; then
+if [[ ${eraseRcloneConf} = "true" ]]; then
     rm -f ${rcloneConfFile}
 fi
 
@@ -139,4 +135,13 @@ fi
 #
 rm -rf ${TMPDIR}
 
+#
+# Display final message
+#
+if [ $rc != 0 ]; then
+    trace "error uploading file ${archiveFile} to archive"
+    exit 1
+fi
+
+trace "upload complete"
 exit $rc

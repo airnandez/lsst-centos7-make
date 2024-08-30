@@ -31,7 +31,7 @@ RUN useradd --create-home --uid 361 --user-group --home-dir /home/${username} ${
 # Add build scripts
 #
 WORKDIR /home/${username}
-ADD --chown=lsstsw:lsstsw ["functions.sh", "makeStack.sh", "buildStack.sh", "enableDevtoolset.bash", "upload.sh", "conda-extended-*.env", "./"]
-RUN ["/bin/chmod", "ugo+rx", "makeStack.sh", "buildStack.sh", "enableDevtoolset.bash", "upload.sh"]
+ADD --chown=lsstsw:lsstsw ["functions.sh", "makeStack.sh", "buildStack.sh", "upload.sh", "conda-extended-*.env", "./"]
+RUN ["/bin/chmod", "ugo+rx", "makeStack.sh", "buildStack.sh", "upload.sh"]
 
-CMD /bin/bash
+CMD ["/bin/bash"]

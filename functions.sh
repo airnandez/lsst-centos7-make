@@ -7,14 +7,18 @@
 # Name of the rclone endpoint and bucket to upload to and download from
 # the archive.
 readonly bucket="rubin:software"
+
+# Suffix extension for experimental builds
 readonly experimentalExt="dev"
+
+# Name of the default cvmfs repo
 readonly cvmfsRepoName="sw.lsst.eu"
 
 
 # Returns the description of the linux distribution, e.g.
 #    "CentOS Linux release 7.3.1611 (Core)"
 #    "Ubuntu 14.04.5 LTS"
-linuxDescription() {
+function linuxDescription() {
     local description="unknown"
     # Try first the lsb_release command. It returns:
     #    Description:   Ubuntu 14.04.5 LTS
@@ -31,7 +35,7 @@ linuxDescription() {
 }
 
 # Returns the linux distribution, e.g. "CentOS", "Ubuntu"
-linuxDistribution() {
+function linuxDistribution() {
     local distrib="unknown"
     # Try first the lsb_release command. It returns:
     #    Distribution:  Ubuntu 14.04.5 LTS
@@ -48,29 +52,31 @@ linuxDistribution() {
 }
 
 # Returns the operating system, e.g. "linux", "darwin"
-osName() {
+function osName() {
     echo $(uname -s | tr '[:upper:]' '[:lower:]')
 }
 
 # Returns the architecture, e.g. "x86_64", "arm64", "aarch64"
-architecture() {
+function architecture() {
     echo $(uname -m | tr '[:upper:]' '[:lower:]')
 }
 
 # Returns the execution platform, e.g. linux-x86_64, darwin-x86_64
-platform() {
+function platform() {
     echo "$(osName)-$(architecture)"
 }
 
-# Returns the specific distribution of the operating system and the architecture, e.g. almalinux-aarch64, rhel-x86_64, darwin-x86_64
-osDistribArch() {
-    local distrib="unknown"
+# Returns the specific distribution of the operating system and the architecture
+# e.g. "almalinux-aarch64", "rhel-x86_64", "darwin-x86_64"
+function osDistribArch() {
+    local distrib
     case $(osName) in
         "darwin")
             distrib="darwin"
             ;;
 
         "linux")
+            distrib="unknownlinux"
             if [[ -f "/etc/os-release" ]]; then
                 # File '/etc/os-release' contains a line of the form 'ID="almalinux"'. Extract the Linux identifier.
                 distrib=$(cat /etc/os-release | awk -F '=' '$1=="ID" {print $2}' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')
@@ -85,14 +91,14 @@ osDistribArch() {
 
 
 # Returns the description of the Python interpreter, e.g. "Python 3.6.2 :: Continuum Analytics, Inc."
-pythonDescription() {
+function pythonDescription() {
     echo $(python --version 2>&1)
 }
 
 # Returns the description of the C++ compiler, e.g. "c++ (GCC) 6.3.1 20170216 (Red Hat 6.3.1-3)"
-cppDescription() {
+function cppDescription() {
     local description=$(c++ --version | head -1)
-    if [[ ${MACOSX_DEPLOYMENT_TARGET} != "" ]]; then
+    if [[ -n ${MACOSX_DEPLOYMENT_TARGET} ]]; then
         description="${description} [MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET}"]"
     fi
     echo "${description}"
@@ -101,7 +107,7 @@ cppDescription() {
 # Returns a description of the operating system
 # e.g. "CentOS Linux release 7.3.1611 (Core)  Linux 3.10.0-514.10.2.el7.x86_64 #1 SMP Fri Mar 3 00:04:05 UTC 2017 x86_64 x86_64"
 #      "Mac OS X 10.11.6 Darwin 15.6.0 Darwin Kernel Version 15.6.0: Tue Jan 30 11:45:51 PST 2018; root:xnu-3248.73.8~1/RELEASE_X86_64 x86_64 i386"
-osDescription() {
+function osDescription() {
     local description=""
     case $(osName) in
         "darwin")
@@ -119,13 +125,18 @@ osDescription() {
 }
 
 # Prints a message prefixed with a time stamp of the form 2018-01-02 13:14:15"
-trace() {
+function trace() {
     timestamp=$(date -u +"%Y-%m-%d %H:%M:%SZ")
-    echo -e "$timestamp" "$@"
+    echo -e "${timestamp}" "${thisScript}:" "$@"
+}
+
+# Prints a message prefixed with the name of the executing script
+function perror() {
+    echo -e "${thisScript}:" "$@"
 }
 
 # Returns true if the argument tag is a valid one
-isValidTag() {
+function isValidTag() {
     local tag=$1
     local releaseDir=$(getReleaseDir ${tag} false)
     if [[ -z ${releaseDir} ]]; then
@@ -137,7 +148,7 @@ isValidTag() {
 # Returns the name of the target release directory, computed from the
 # product tag and the experimental flag, e.g. 'w_2024_35', 'w_2024_35-dev'
 # or the empty string if the format of the tag cannot be interpreted.
-getReleaseDir() {
+function getReleaseDir() {
     local tag=$1
     local experimental=$2
     local releaseDir=""

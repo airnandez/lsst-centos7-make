@@ -9,17 +9,16 @@
 #    requested version of the LSST software framework ready to be deployed    #
 #    via CernVM-FS or on a local directory.                                   #
 #                                                                             #
-# Usage:                                                                      #
-#    makeStack.sh [-u <user>]  [-d <target directory>]  [-B <base product>]   #
-#                 [-p products] [-x <extension>] [-Z] -t <tag>                #
 #                                                                             #
+# Usage:                                                                      #
+#    makeStack.sh [-u <user>] [-d <target directory>] [-B <base product>]     #
+#                 [-x <extension>] [-Z] -t <tag>                              #
 #                                                                             #
 #    where:                                                                   #
 #        <user> is the username which will own the software built.            #
 #            Default: "lsstsw" on linux, current user on OS X                 #
 #                                                                             #
-#        <base product> is the identifier of the base product to install,     #
-#            such as "lsst_distrib" or "lsst_sims".                           #
+#        <base product> is the identifier of the base product to install.     #
 #             Default: "lsst_distrib"                                         #
 #                                                                             #
 #        <tag> is the tag, as known by EUPS, of the LSST software to build,   #
@@ -36,11 +35,6 @@
 #            create it.                                                       #
 #            Default: "/cvmfs/sw.lsst.eu/<os>-x86_64" where <os>              #
 #            is either "linux" or "darwin".                                   #
-#                                                                             #
-#        <products> is the comma-separated list of EUPS products to be        #
-#            installed in addition to the base product. The base product      #
-#            is always installed first.                                       #
-#            Default: ""                                                      #
 #                                                                             #
 #        <extension> extension to the name of the build directory, e.g. "py2" #
 #            Default: ""                                                      #
@@ -59,37 +53,38 @@
 #
 # Import functions
 #
-source functions.sh
+thisScript=$(basename $0)
+thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${thisScriptDir}/functions.sh"
 
 #
 # Init
 #
-thisScript=$(basename $0)
 user="lsstsw"
 os=$(osName)
-if [[ $os == "darwin" ]]; then
-    user=$USER
+if [[ ${os} == "darwin" ]]; then
+    user=${USER}
 fi
-targetDir="/cvmfs/${cvmfsRepoName}/$(osDistribArch)"
+targetDir="/cvmfs/${cvmfsRepoName}"
 baseProduct="lsst_distrib"
 useBinaries=false
 isExperimental=false
 doUpload=true
 
 #
-# usage()
+# Usage
 #
-usage () {
-    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-p <products>] [-Z] [-X] [-U] -t <tag>"
+function usage () {
+    echo "Usage: ${thisScript} [-u <user>] [-d <target directory>] [-B <base product>] [-Z] [-X] [-U] -t <tag>"
 }
 
 #
 # Parse command line arguments
 #
-while getopts d:t:u:B:p:x:UXZ optflag; do
+while getopts d:t:u:B:x:UXZ optflag; do
     case $optflag in
         d)
-            targetDir=${OPTARG}
+            targetDir=$(readlink -f "${OPTARG}")
             ;;
         t)
             tag=${OPTARG}
@@ -99,9 +94,6 @@ while getopts d:t:u:B:p:x:UXZ optflag; do
             ;;
         B)
             baseProduct=${OPTARG}
-            ;;
-        p)
-            optProducts=${OPTARG}
             ;;
         U)
             doUpload=false
@@ -130,18 +122,21 @@ fi
 # Is the provided tag valid?
 #
 if ! isValidTag ${tag}; then
-    echo "${thisScript}: '${tag}' is not a recognized version tag"
+    trace "'\${tag}\' is not a recognized version tag"
     exit 1
 fi
 
-# Retreive the release directory where to build this release
+#
+# Retreive the name of the release directory for this release
+#
 releaseDir=$(getReleaseDir ${tag} ${isExperimental})
 
 #
 # Create the build directory: the build directory depends on the specified target
 # directory. The build directory ends like "lsst_distrib/v13.0" or "lsst_distrib/w_2017_10".
 #
-buildDir=${targetDir}/${baseProduct}/${releaseDir}
+targetDir="${targetDir}/$(osDistribArch)"
+buildDir="${targetDir}/${baseProduct}/${releaseDir}"
 if [[ -d ${buildDir} ]]; then
     # Remove build directory if it already exists: newinstall.sh doesn't install
     # in a non-empty directory
@@ -180,18 +175,14 @@ chown -R ${user} ${buildDir} ${scratchDir} ${archiveDir} ${logDir}
 #
 # Launch installation
 #
-products=${baseProduct}
-if [[ -n "${optProducts}" ]]; then
-    products=${products},${optProducts}
-fi
 [[ ${useBinaries} == true ]] && binaryFlag="-Z"
 [[ ${doUpload} == false ]] && uploadFlag="-U"
 
 if [[ $(whoami) == ${user} ]]; then
-    (./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} ${binaryFlag} ${uploadFlag} -t ${tag}) < /dev/null  >> ${logFile}  2>&1
+    (./buildStack.sh -p ${baseProduct} -b ${buildDir} -a ${archiveDir} ${binaryFlag} ${uploadFlag} -t ${tag}) < /dev/null  &> ${logFile}
     rc=$?
 else
-    (su "${user}" -c "./buildStack.sh -p ${products} -b ${buildDir} -a ${archiveDir} ${binaryFlag} ${uploadFlag} -t ${tag}") < /dev/null  >> ${logFile}  2>&1
+    (su "${user}" -c "./buildStack.sh -p ${baseProduct} -b ${buildDir} -a ${archiveDir} ${binaryFlag} ${uploadFlag} -t ${tag}") < /dev/null &> ${logFile}
     rc=$?
 fi
 

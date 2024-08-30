@@ -10,13 +10,10 @@
 #    via CernVM-FS or on a local directory.                                   #
 #                                                                             #
 # Usage:                                                                      #
-#    buildStack.sh -p products  -b <build directory>  -a <archive directory>  #
-#                  [-Z] -t <tag>                                              #
+#    buildStack.sh -p <product> -b <build directory> -a <archive directory>   #
+#                  [-Z] [-U] -t <tag>                                         #
 #                                                                             #
 #    where:                                                                   #
-#        <products> is the comma-separated list of EUPS products to be        #
-#            installed, e.g. "lsst_distrib".                                  #
-#                                                                             #
 #        <build directory> is the absolute path of the directory the stack    #
 #            will be built into. This directory must exist and be writable.   #
 #                                                                             #
@@ -39,13 +36,13 @@
 #
 # Import functions
 #
-source 'functions.sh'
+thisScript=$(basename $0)
+thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${thisScriptDir}/functions.sh"
 
 #
 # Init
 #
-thisScript=$(basename $0)
-thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 os=$(osName)
 TMPDIR=${TMPDIR:-/tmp}
 useBinaries=false
@@ -53,14 +50,17 @@ doUpload=true
 doCompressArchive=true
 
 #
-# Routines
+# Usage
 #
-usage () {
-    echo "Usage: ${thisScript}  -p <products>  -b <build directory>  -a <archive directory> [-Z] [-U] -t <tag>"
+function usage () {
+    echo "Usage: ${thisScript}  -p <product>  -b <build directory>  -a <archive directory> [-Z] [-U] -t <tag>"
 }
 
+#
 # Start execution
-trace "$0" "$*"
+#
+trace "starting execution"
+trace "$*"
 
 #
 # Parse and verify command line arguments
@@ -68,7 +68,7 @@ trace "$0" "$*"
 while getopts p:b:a:t:UZ optflag; do
     case $optflag in
         p)
-            products=${OPTARG//,/ }
+            product=${OPTARG//,/ }
             ;;
         b)
             buildDir=$(readlink -f "${OPTARG}")
@@ -86,7 +86,7 @@ while getopts p:b:a:t:UZ optflag; do
             doUpload=false
             ;;
         *)
-            echo "${thisScript}: unexpected option ${optflag}"
+            trace "unexpected option ${optflag}"
             usage
             exit 1
             ;;
@@ -94,35 +94,33 @@ while getopts p:b:a:t:UZ optflag; do
 done
 shift $((OPTIND - 1))
 
-if [[ -z "${buildDir}" || -z "${archiveDir}" || -z "${tag}" || -z "${products}" ]]; then
+if [[ -z "${buildDir}" || -z "${archiveDir}" || -z "${tag}" || -z "${product}" ]]; then
     usage
     exit 0
 fi
 
 if [[ ! -d "${buildDir}" ]]; then
-    echo "${thisScript}: build directory \"${buildDir}\" does not exist"
+    trace "build directory \"${buildDir}\" does not exist"
     exit 1
 fi
 
 if [[ ! -d "${archiveDir}" ]]; then
-    echo "${thisScript}: archive directory \"${archiveDir}\" does not exist"
+    trace "archive directory \"${archiveDir}\" does not exist"
     exit 1
 fi
 
 if [[ ${UID} = 0 ]]; then
-    echo "${thisScript}: cannot run as root"
+    trace "cannot run as root"
     exit 1
 fi
 
-
 #
-# Is the provided tag a stable version or a weekly version?
+# Is the provided tag valid?
 #
 if ! $(isValidTag ${tag}); then
-    echo "${thisScript}: '${tag}' is not a recognized version tag"
+    trace "\'${tag}\' is not a recognized version tag"
     exit 1
 fi
-
 
 #
 # Download the installer
@@ -130,29 +128,13 @@ fi
 url="https://raw.githubusercontent.com/lsst/lsst/main/scripts/lsstinstall"  # or use redirector https://ls.st/lsstinstall
 status=$(curl --silent --head ${url} | head -n 1)
 if [[ ${status} != HTTP*200* ]]; then
-    echo "${thisScript}: could not find installer at ${url}"
+    trace "could not find installer at ${url}"
     exit 1
 fi
 cd ${buildDir}
 cmd="curl --silent --location --remote-name ${url}"
 trace "working directory" $(pwd)
 trace $cmd ; $cmd
-
-#
-# Set deployment target for OS X
-#    10.9   Mavericks
-#    10.10  Yosemite
-#    10.11  El Capitan
-#    10.12  Sierra
-#    10.13  High Sierra
-#    10.14  Mojave
-#    10.15  Catalina
-#    11     Big Sur
-#    12     Monterey
-#
-if [[ ${os} == "darwin" ]]; then
-    export MACOSX_DEPLOYMENT_TARGET="10.9"
-fi
 
 #
 # Remove conda & mamba configuration files as well as astropy cache
@@ -176,13 +158,13 @@ case ${os} in
         cmd="bash lsstinstall -P -T ${tag} -d ${installerFlags}"
         ;;
     *)
-        echo "${thisScript}: unsupported operating system ${os}"
+        trace "${thisScript}: unsupported operating system ${os}"
         exit 1
 esac
 
 trace $cmd ; $cmd
 if [[ ! -f "loadLSST.bash" ]]; then
-    echo "${thisScript}: file 'loadLSST.bash' not found"
+    trace "file 'loadLSST.bash' not found after exeuction of lsstinstall"
     exit 1
 fi
 
@@ -193,33 +175,30 @@ trace "activating minimal LSST environment via loadLSST.bash"
 source loadLSST.bash
 
 #
-# Download and build the requested products
+# Download and build the requested product
 #
-products=$(echo ${products} | sed -e 's/,/ /g')
-for p in ${products}; do
-    cmd="eups distrib install -t ${tag} ${p}"
-    trace $cmd ; $cmd
-    if [ $? != 0 ]; then
-        echo "${thisScript}: command ${cmd} failed"
-        exit 1
-    fi
-done
+cmd="eups distrib install -t ${tag} ${product}"
+trace $cmd ; $cmd
+if [ $? != 0 ]; then
+    trace "command ${cmd} failed"
+    exit 1
+fi
 
 #
-# Update the Python interpreter path of EUPS installed products: we need to perform
+# Update the Python interpreter path of EUPS installed product: we need to perform
 # this step for both Linux and macOS
 #
 trace "applying shebangtron"
-shebangtron=${TMPDIR}/shebangtron
+shebangtron="${TMPDIR}/shebangtron"
 curl -sSL -o ${shebangtron} "https://raw.githubusercontent.com/lsst/shebangtron/master/shebangtron"
 if [[ ! -f ${shebangtron} ]]; then
-    echo "${thisScript}: file ${shebangtron} not found"
+    trace "file ${shebangtron} not found"
     exit 1
 fi
 cmd="python ${shebangtron}"
 trace $cmd; $cmd
 if [ $? != 0 ]; then
-    echo "${thisScript}: shebangtron failed"
+    trace "shebangtron failed"
     exit 1
 fi
 trace "shebangtron finished"
@@ -235,15 +214,6 @@ cat >> ${eupsPath}/site/startup.py <<-EOF
 # Configure EUPS not to try to acquire locks on a read-only file system
 hooks.config.site.lockDirectoryBase = None
 EOF
-
-#
-# Execute "conda init shell", for conda 22.9.0
-# (see: https://github.com/conda/conda/issues/11885)
-#
-if [[ $(conda --version) =~ "conda 22.9" ]]; then
-    cmd="conda init bash zsh fish"
-    trace $cmd ; $cmd
-fi
 
 #
 # Install conda packages not included in distribution
@@ -264,10 +234,6 @@ if [ -f ${condaExtendedEnvironment} ]; then
         trace $cmd ; $cmd
         cmd="conda info --envs"
         trace $cmd ; $cmd
-        # cmd="conda config --add channels conda-forge"
-        # trace $cmd ; $cmd
-        # cmd="conda config --set channel_priority strict"
-        # trace $cmd ; $cmd
 
         # Create and activate a new conda environment before
         # installing additional packages
@@ -277,7 +243,7 @@ if [ -f ${condaExtendedEnvironment} ]; then
         cmd="mamba --no-banner create --name ${extendedEnv} --clone ${baseEnv}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
-            echo "${thisScript}: could not create ${extendedEnv}"
+            trace "could not create ${extendedEnv}"
             exit 1
         fi
 
@@ -285,7 +251,7 @@ if [ -f ${condaExtendedEnvironment} ]; then
         cmd="conda activate ${extendedEnv}"
         trace $cmd ; $cmd
         if [ $? != 0 ]; then
-            echo "${thisScript}: could not activate ${extendedEnv}"
+            trace "could not activate ${extendedEnv}"
             exit 1
         fi
 
@@ -295,17 +261,17 @@ if [ -f ${condaExtendedEnvironment} ]; then
         if [ $? != 0 ]; then
             # Could not install extra packages into the newly created environment
             # Revert to the original environment
-            echo "${thisScript}: could not install conda extensions into environment ${extendedEnv}"
-            echo "${thisScript}: reactivating base environment ${baseEnv}"
+            trace "could not install conda extensions into environment ${extendedEnv}"
+            trace "reactivating base environment ${baseEnv}"
             cmd="conda activate ${baseEnv}"
             trace $cmd ; $cmd
             if [ $? != 0 ]; then
-                echo "${thisScript}: could not reactivate conda environment ${baseEnv}"
+                trace "could not reactivate conda environment ${baseEnv}"
                 exit 1
             fi
 
             # Remove the newly created environment
-            echo "${thisScript}: removing extended environment ${extendedEnv}"
+            trace "removing extended environment ${extendedEnv}"
             cmd="mamba env remove --name ${extendedEnv}"
             trace $cmd ; $cmd
         else
@@ -348,7 +314,6 @@ if [[ ${didCreateEnvironment} = true ]]; then
     done
 fi
 
-
 #
 # Add README file for this version
 #
@@ -357,7 +322,7 @@ cat > ${buildDir}/README.txt <<-EOF
 LSST Science Pipelines
 ----------------------
 
-Product(s):          ${products}
+Product:             ${product}
 Tag:                 ${tag}
 Build time:          $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 Build platform:      $(osDescription)
@@ -388,14 +353,12 @@ if [[ ${buildDir} =~ /cvmfs ]]; then
     done
 fi
 
-
 #
 # Make archive file
 #
-trace "building archive file"
-archiveExtension=".tar"
+archiveExtension="tar"
 if [[ ${doCompressArchive} == true ]]; then
-    extraTarOpts=" -z "
+    extraTarOpts="-z"
     archiveExtension="${archiveExtension}.gz"
 fi
 tarFileName="${releaseDir}.${archiveExtension}" # e.g. w_2024_35.tar.gz, w_2024_35-dev.tar.gz or v27.0.0.tar.gz
@@ -404,14 +367,13 @@ tarCmd="tar"
 if [[ ${os} == "darwin" ]]; then
     tarCmd="gnutar"
 fi
-# TODO: remove the 'echo' below
-cmd="echo ${tarCmd} --directory $(dirname ${buildDir}) --hard-dereference ${extraTarOpts} -cf ${archiveFile} $(basename ${buildDir})"
+trace "making archive file ${archiveFile}"
+cmd="${tarCmd} --directory $(dirname ${buildDir}) --hard-dereference ${extraTarOpts} --create --file ${archiveFile} $(basename ${buildDir})"
 trace $cmd ; $cmd
 if [ $? != 0 ]; then
-    echo "${thisScript}: error creating archive ${archiveFile}"
+    trace "error creating archive ${archiveFile}"
     exit 1
 fi
-
 
 #
 # Upload archive file
@@ -421,12 +383,17 @@ if [[ ${doUpload} == true ]]; then
     #    rubin:software/cvmfs/sw.lsst.eu/almalinux-x86_64/lsst_distrib/w_2024_35.tar.gz
     destination="${bucket}$(dirname ${buildDir})/${tarFileName}"
     uploadExe="${thisScriptDir}/upload.sh"
-    if [[ -x "${uploadExe}" ]]; then
-        trace "uploading archive file ${archiveFile} to ${destination}"
-        cmd="${uploadExe} ${archiveFile} ${destination}"
-        trace $cmd; $cmd
-    else
+    if [[ ! -x "${uploadExe}" ]]; then
         trace "file ${uploadExe} not executable or not found"
+        exit 1
+    fi
+
+    trace "uploading archive file ${archiveFile} to ${destination}"
+    cmd="${uploadExe} ${archiveFile} ${destination}"
+    trace $cmd; $cmd
+    if [ $? != 0 ]; then
+        trace "upload operation failed"
+        exit 1
     fi
 else
     trace "upload disabled: skipping upload of of ${archiveFile}"
