@@ -157,7 +157,7 @@ if ! mkdir -p ${downloadDir}; then
     exit 1
 fi
 
-localArchiveFilePath="${downloadDir}/${archiveName}"
+localArchiveFilePath="${downloadDir}/$(basename ${archiveName})"
 rm -f ${localArchiveFilePath}
 trace "downloading archive file ${bucket}${archiveName}"
 cmd="rclone copy ${bucket}${archiveName} ${downloadDir}"
