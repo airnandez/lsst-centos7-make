@@ -182,7 +182,7 @@ fi
 
 releaseDir="${untarDir}/${releaseDir}"
 sudo rm -rf ${releaseDir}
-cmd="tar --warning=no-timestamp --directory ${untarDir} -z --extract --file${localArchiveFilePath}"
+cmd="tar --warning=no-timestamp --directory ${untarDir} -z --extract --file ${localArchiveFilePath}"
 trace "untaring file ${localArchiveFilePath}"
 trace ${cmd}
 if ! ${cmd}; then
