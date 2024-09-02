@@ -152,7 +152,12 @@ installerFlags="-B"  # Do not use binaries
 
 case ${os} in
     "linux")
-        cmd="bash lsstinstall -P -X ${tag} -d ${installerFlags}"
+        # Exact environment currently only exists for 'x86_64' architecture
+        if [[ $(architecture) == "x86_64" ]]; then
+            cmd="bash lsstinstall -P -X ${tag} -d ${installerFlags}"
+        else
+            cmd="bash lsstinstall -P -T ${tag} -d ${installerFlags}"
+        fi
         ;;
     "darwin")
         cmd="bash lsstinstall -P -T ${tag} -d ${installerFlags}"
