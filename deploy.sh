@@ -3,7 +3,7 @@
 #-----------------------------------------------------------------------------#
 # Description:                                                                #
 #    use this script to deploy a release of a LSST product on a CernVM-FS     #
-#    server.                                                                  # 
+#    server.                                                                  #
 #    It must be executed on a stratum 0 CernVM-FS server.                     #
 # Usage:                                                                      #
 #                                                                             #
@@ -39,19 +39,16 @@
 #
 # Import functions
 #
-source 'functions.sh'
+thisScript=$(basename $0)
+thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${thisScriptDir}/functions.sh"
 
 #
 # usage()
 #
-usage () { 
+usage () {
     echo "Usage: ${thisScript} [-B <base product>] [-d <deploy dir>] [-a <architecture>] [-X] -S <distribution>  -t <tag>"
-} 
-
-#
-# Init
-#
-thisScript=$(basename $0)
+}
 
 # Default base product to install
 baseProduct="lsst_distrib"
@@ -59,18 +56,20 @@ baseProduct="lsst_distrib"
 # Default directory to deploy the software
 deployDir="/cvmfs/${cvmfsRepoName}"
 
-# Default kernel architecture
+# Default architecture
 arch="x86_64"
 
 # Experimental version?
 isExperimental=false
-experimentalExt="dev"
 
 #
 # Parse command line arguments
 #
-while getopts B:d:a:S:t:X optflag; do
+while getopts a:B:d:S:t:X optflag; do
     case $optflag in
+        a)
+            arch=$(echo ${OPTARG} | tr '[:upper:]' '[:lower:]')
+            ;;
         B)
             baseProduct=${OPTARG}
             ;;
@@ -79,9 +78,6 @@ while getopts B:d:a:S:t:X optflag; do
             ;;
         S)
             distribution=$(echo ${OPTARG} | tr '[:upper:]' '[:lower:]')
-            ;;
-        a)
-            arch=$(echo ${OPTARG} | tr '[:upper:]' '[:lower:]')
             ;;
         X)
             isExperimental=true
@@ -106,7 +102,7 @@ case ${distribution} in
         ;;
 
     *)
-        echo "${thisScript}: unsupported distribution value \"${distribution}\" (expecting \"almalinux\", \"darwin\" or \"linux\")"
+        perror "unsupported distribution \"${distribution}\" (expecting \"almalinux\", \"darwin\" or \"linux\")"
         exit 1
         ;;
 esac
@@ -118,7 +114,7 @@ case ${arch} in
     "aarch64"|"arm64"|"x86_64")
         ;;
     *)
-        echo "${thisScript}: unsupported architecture value \"${arch}\" (expecting \"aarch64\", \"x86_64\" or \"arm64\")"
+        perror "unsupported architecture \"${arch}\" (expecting \"aarch64\", \"arm64\" or \"x86_64\")"
         exit 1
         ;;
 esac
@@ -128,15 +124,15 @@ distributionArch="${distribution}-${arch}"  # e.g. "almalinux-x86_64" or "darwin
 # Validate tag
 #
 if ! $(isValidTag ${tag}); then
-    echo "${thisScript}: tag \"${tag}\" is not valid"
-    exit 1    
+    perror "tag \"${tag}\" is not valid"
+    exit 1
 fi
 
 #
 # Validate deploy directory
 #
 if [[ ! -d ${deployDir} ]]; then
-    echo "${thisScript}: directory \"${deployDir}\" does not exist"
+    perror "deploy directory \"${deployDir}\" does not exist"
     exit 1
 fi
 
@@ -146,7 +142,7 @@ fi
 releaseDir=$(getReleaseDir ${tag} ${isExperimental})
 targetDir=${deployDir}/${distributionArch}/${baseProduct}/${releaseDir}
 if [[ -d ${targetDir} ]]; then
-    echo "${thisScript}: directory \"${targetDir}\" already exists. Remove it before deploying"
+    perror "directory \"${targetDir}\" already exists. Remove it before deploying"
     exit 1
 fi
 
@@ -155,50 +151,57 @@ fi
 #
 archiveName="${deployDir}/${distributionArch}/${baseProduct}/${releaseDir}.tar.gz"
 workDir='/cvmfs/tmp'
-downloadDir=${workDir}/download
-mkdir -p ${downloadDir}
-localArchiveFilePath=${downloadDir}/${archiveName}
+downloadDir="${workDir}/download"
+if ! mkdir -p ${downloadDir}; then
+    perror "could not create directory ${downloadDir}"
+    exit 1
+fi
+
+localArchiveFilePath="${downloadDir}/${archiveName}"
 rm -f ${localArchiveFilePath}
 trace "downloading archive file ${bucket}${archiveName}"
 cmd="rclone copy ${bucket}${archiveName} ${downloadDir}"
-trace ${cmd}; ${cmd}
-if [[ $? != 0 ]]; then
-    echo "${thisScript}: error downloading archive file"
+trace ${cmd}
+if ! ${cmd}; then
+    perror "error downloading archive file"
     exit 1
 fi
 if [[ ! -f ${localArchiveFilePath} ]]; then
-    echo "${thisScript}: could not find downloaded archive file ${localArchiveFilePath}"
-    exit 1  
+    perror "could not find downloaded archive file ${localArchiveFilePath}"
+    exit 1
 fi
 
 #
 # Untar archive file into a temporary directory
 #
-untarDir=${workDir}/${distributionArch}
-mkdir -p ${untarDir}
-releaseDir=${untarDir}/${releaseDir}
-sudo rm -rf ${releaseDir}
-cmd="tar --warning=no-timestamp --directory ${untarDir} -zxf ${localArchiveFilePath}"
-trace "untaring file ${localArchiveFilePath}"
-trace ${cmd}; ${cmd}
+untarDir="${workDir}/${distributionArch}"
+if ! mkdir -p ${untarDir}; then
+    perror "could not create directory ${untarDir}"
+    exit 1
+fi
 
-if [[ $? != 0 ]]; then
-    echo "${thisScript}: error untaring file ${localArchiveFilePath}"
+releaseDir="${untarDir}/${releaseDir}"
+sudo rm -rf ${releaseDir}
+cmd="tar --warning=no-timestamp --directory ${untarDir} -z --extract --file${localArchiveFilePath}"
+trace "untaring file ${localArchiveFilePath}"
+trace ${cmd}
+if ! ${cmd}; then
+    perror "error untaring file ${localArchiveFilePath}"
     exit 1
 fi
 
 if [[ ! -d ${releaseDir} ]]; then
-    echo "${thisScript}: could not find directory ${releaseDir}"
-    exit 1  
+    perror "could not find directory ${releaseDir}"
+    exit 1
 fi
 
 #
 # Start cvmfs transaction
 #
 cmd="sudo cvmfs_server transaction ${cvmfsRepoName}"
-trace ${cmd}; ${cmd}
-if [[ $? != 0 ]]; then
-    echo "${thisScript}: could not start cvmfs_server transaction"
+trace ${cmd}
+if ! ${cmd}; then
+    perror "could not start cvmfs_server transaction"
     exit 1
 fi
 
@@ -207,20 +210,20 @@ fi
 #
 baseProductDir=$(dirname ${targetDir})
 if [[ ! -d ${baseProductDir} ]]; then
-   cmd="sudo mkdir -p ${baseProductDir}"
-   trace ${cmd}; ${cmd}
-   if [[ $? != 0 ]]; then
-       echo "${thisScript}: could not create base product directory ${baseProductDir}"
-       cmd="sudo cvmfs_server abort -f ${cvmfsRepoName}"
-       trace ${cmd}; ${cmd}
-       exit 1
-   fi
+    cmd="sudo mkdir -p ${baseProductDir}"
+    trace ${cmd}
+    if ! ${cmd}; then
+        perror "could not create base product directory ${baseProductDir}"
+        cmd="sudo cvmfs_server abort -f ${cvmfsRepoName}"
+        trace ${cmd}; ${cmd}
+        exit 1
+    fi
 fi
 
 cmd="sudo cp -pR ${releaseDir} ${baseProductDir}"
-trace ${cmd}; ${cmd}
-if [[ $? != 0 ]]; then
-    echo "${thisScript}: could not copy release to its destination directory ${baseProductDir}"
+trace ${cmd}
+if ! ${cmd}; then
+    perror "could not copy release to its destination directory ${baseProductDir}"
     cmd="sudo cvmfs_server abort -f ${cvmfsRepoName}"
     trace ${cmd}; ${cmd}
     exit 1
@@ -241,9 +244,9 @@ fi
 # Commit this cvmfs transaction and publish the modifications
 #
 cmd="sudo cvmfs_server publish ${cvmfsRepoName}"
-trace ${cmd}; ${cmd}
-if [[ $? != 0 ]]; then
-    echo "${thisScript}: could not commit transaction"
+trace ${cmd}
+if ! ${cmd}; then
+    perror "could not commit transaction"
     cmd="sudo cvmfs_server abort -f ${cvmfsRepoName}"
     trace ${cmd}; ${cmd}
     exit 1
@@ -256,5 +259,5 @@ trace "cleaning up"
 cmd="sudo rm -rf ${untarDir} ${downloadDir}"
 trace ${cmd}; ${cmd}
 
-trace "done"
+trace "deployment of release ${releaseDir} for ${distributionArch} ended successfully"
 exit 0
