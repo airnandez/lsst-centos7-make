@@ -65,16 +65,16 @@ trace "$*"
 #
 # Parse and verify command line arguments
 #
-while getopts p:b:a:t:UZ optflag; do
+while getopts a:b:p:t:UZ optflag; do
     case $optflag in
-        p)
-            product=${OPTARG//,/ }
+        a)
+            archiveDir=$(readlink -f "${OPTARG}")
             ;;
         b)
             buildDir=$(readlink -f "${OPTARG}")
             ;;
-        a)
-            archiveDir=$(readlink -f "${OPTARG}")
+        p)
+            product=${OPTARG//,/ }
             ;;
         t)
             tag=${OPTARG}
@@ -134,7 +134,7 @@ fi
 cd ${buildDir}
 cmd="curl --silent --location --remote-name ${url}"
 trace "working directory" $(pwd)
-trace $cmd ; $cmd
+trace ${cmd} ; ${cmd}
 
 #
 # Remove conda & mamba configuration files as well as astropy cache
@@ -162,7 +162,7 @@ case ${os} in
         exit 1
 esac
 
-trace $cmd ; $cmd
+trace ${cmd} ; ${cmd}
 if [[ ! -f "loadLSST.bash" ]]; then
     trace "file 'loadLSST.bash' not found after exeuction of lsstinstall"
     exit 1
@@ -178,8 +178,8 @@ source loadLSST.bash
 # Download and build the requested product
 #
 cmd="eups distrib install -t ${tag} ${product}"
-trace $cmd ; $cmd
-if [ $? != 0 ]; then
+trace ${cmd}
+if ! ${cmd}; then
     trace "command ${cmd} failed"
     exit 1
 fi
@@ -196,8 +196,8 @@ if [[ ! -f ${shebangtron} ]]; then
     exit 1
 fi
 cmd="python ${shebangtron}"
-trace $cmd; $cmd
-if [ $? != 0 ]; then
+trace ${cmd}
+if ! ${cmd}; then
     trace "shebangtron failed"
     exit 1
 fi
@@ -231,9 +231,9 @@ if [ -f ${condaExtendedEnvironment} ]; then
     if [ $? -eq 0 ]; then
         # Configure conda
         cmd="conda --version"
-        trace $cmd ; $cmd
+        trace ${cmd} ; ${cmd}
         cmd="conda info --envs"
-        trace $cmd ; $cmd
+        trace ${cmd} ; ${cmd}
 
         # Create and activate a new conda environment before
         # installing additional packages
@@ -241,31 +241,31 @@ if [ -f ${condaExtendedEnvironment} ]; then
         extendedEnv="${baseEnv}-ext"
         trace "creating ${extendedEnv} conda environment"
         cmd="mamba --no-banner create --name ${extendedEnv} --clone ${baseEnv}"
-        trace $cmd ; $cmd
-        if [ $? != 0 ]; then
+        trace ${cmd}
+        if ! ${cmd}; then
             trace "could not create ${extendedEnv}"
             exit 1
         fi
 
         trace "activating ${extendedEnv} environment"
         cmd="conda activate ${extendedEnv}"
-        trace $cmd ; $cmd
-        if [ $? != 0 ]; then
+        trace ${cmd}
+        if ! ${cmd}; then
             trace "could not activate ${extendedEnv}"
             exit 1
         fi
 
         trace "installing extra conda packages"
         cmd="mamba --no-banner install --channel conda-forge --quiet --yes --file ${condaExtendedEnvironment}"
-        trace $cmd ; $cmd
-        if [ $? != 0 ]; then
+        trace ${cmd}
+        if ! ${cmd}; then
             # Could not install extra packages into the newly created environment
             # Revert to the original environment
             trace "could not install conda extensions into environment ${extendedEnv}"
             trace "reactivating base environment ${baseEnv}"
             cmd="conda activate ${baseEnv}"
-            trace $cmd ; $cmd
-            if [ $? != 0 ]; then
+            trace ${cmd}
+            if ! ${cmd}; then
                 trace "could not reactivate conda environment ${baseEnv}"
                 exit 1
             fi
@@ -273,7 +273,7 @@ if [ -f ${condaExtendedEnvironment} ]; then
             # Remove the newly created environment
             trace "removing extended environment ${extendedEnv}"
             cmd="mamba env remove --name ${extendedEnv}"
-            trace $cmd ; $cmd
+            trace ${cmd} ; ${cmd}
         else
             didCreateEnvironment=true
         fi
@@ -289,7 +289,7 @@ if [[ -n "${jupyterCmd}" ]]; then
     # Build Jupyter Lab source extensions
     #
     cmd="${jupyterCmd} lab build"
-    trace $cmd ; $cmd
+    trace ${cmd} ; ${cmd}
 fi
 
 #
@@ -342,14 +342,14 @@ if [[ ${buildDir} =~ /cvmfs ]]; then
     # Add an empty '.cvmfscatalog' file at the top of this release
     trace "creating .cvmfscatalog file"
     cmd="touch ${buildDir}/.cvmfscatalog"
-    trace $cmd ; $cmd
+    trace ${cmd} ; ${cmd}
 
     # Add an empty '.cvmfscatalog' file at the root directory of
     # each conda environment
     trace "creating .cvmfscatalog files for each conda environment"
     for dir in $(conda env list | awk '/^lsst-scipipe-*/ {print $NF}'); do
         cmd="touch ${dir}/.cvmfscatalog"
-        trace $cmd ; $cmd
+        trace ${cmd} ; ${cmd}
     done
 fi
 
@@ -369,8 +369,8 @@ if [[ ${os} == "darwin" ]]; then
 fi
 trace "making archive file ${archiveFile}"
 cmd="${tarCmd} --directory $(dirname ${buildDir}) --hard-dereference ${extraTarOpts} --create --file ${archiveFile} $(basename ${buildDir})"
-trace $cmd ; $cmd
-if [ $? != 0 ]; then
+trace ${cmd}
+if ! ${cmd}; then
     trace "error creating archive ${archiveFile}"
     exit 1
 fi
@@ -390,8 +390,8 @@ if [[ ${doUpload} == true ]]; then
 
     trace "uploading archive file ${archiveFile} to ${destination}"
     cmd="${uploadExe} ${archiveFile} ${destination}"
-    trace $cmd; $cmd
-    if [ $? != 0 ]; then
+    trace ${cmd}
+    if ! ${cmd}; then
         trace "upload operation failed"
         exit 1
     fi
