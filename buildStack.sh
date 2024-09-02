@@ -402,7 +402,7 @@ fi
 #
 # Display end message
 #
-trace "build process ended successfully"
+trace "build process of ${releaseDir} for $(osDistribArch) ended successfully"
 
 #
 # Clean up
