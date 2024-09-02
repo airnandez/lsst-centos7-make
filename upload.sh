@@ -120,7 +120,7 @@ fi
 # Upload the archive file to its destination objet.
 #
 cmd="${rcloneExe} -I --config ${rcloneConfFile} copyto ${archiveFile} ${destination}"
-trace $cmd ; $cmd
+trace ${cmd} ; ${cmd}
 rc=$?
 
 #

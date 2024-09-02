@@ -50,6 +50,12 @@ usage () {
     echo "Usage: ${thisScript} [-B <base product>] [-d <deploy dir>] [-a <architecture>] [-X] -S <distribution>  -t <tag>"
 }
 
+#
+# Start execution
+#
+trace "starting execution"
+trace "$*"
+
 # Default base product to install
 baseProduct="lsst_distrib"
 
@@ -183,7 +189,7 @@ fi
 releaseDir="${untarDir}/${releaseDir}"
 sudo rm -rf ${releaseDir}
 cmd="tar --warning=no-timestamp --directory ${untarDir} -z --extract --file ${localArchiveFilePath}"
-trace "untaring file ${localArchiveFilePath}"
+trace "untaring downloaded archive file ${localArchiveFilePath}"
 trace ${cmd}
 if ! ${cmd}; then
     perror "error untaring file ${localArchiveFilePath}"
@@ -213,7 +219,7 @@ if [[ ! -d ${baseProductDir} ]]; then
     cmd="sudo mkdir -p ${baseProductDir}"
     trace ${cmd}
     if ! ${cmd}; then
-        perror "could not create base product directory ${baseProductDir}"
+        perror "could not create base product directory ${baseProductDir}, aborting..."
         cmd="sudo cvmfs_server abort -f ${cvmfsRepoName}"
         trace ${cmd}; ${cmd}
         exit 1
@@ -223,7 +229,7 @@ fi
 cmd="sudo cp -pR ${releaseDir} ${baseProductDir}"
 trace ${cmd}
 if ! ${cmd}; then
-    perror "could not copy release to its destination directory ${baseProductDir}"
+    perror "could not copy release directory ${releaseDir} to its destination directory ${baseProductDir}, aborting..."
     cmd="sudo cvmfs_server abort -f ${cvmfsRepoName}"
     trace ${cmd}; ${cmd}
     exit 1
@@ -246,7 +252,7 @@ fi
 cmd="sudo cvmfs_server publish ${cvmfsRepoName}"
 trace ${cmd}
 if ! ${cmd}; then
-    perror "could not commit transaction"
+    perror "could not commit transaction, aborting..."
     cmd="sudo cvmfs_server abort -f ${cvmfsRepoName}"
     trace ${cmd}; ${cmd}
     exit 1
@@ -259,5 +265,5 @@ trace "cleaning up"
 cmd="sudo rm -rf ${untarDir} ${downloadDir}"
 trace ${cmd}; ${cmd}
 
-trace "deployment of release ${releaseDir} for ${distributionArch} ended successfully"
+trace "deployment of release ${targetDir} ended successfully"
 exit 0
