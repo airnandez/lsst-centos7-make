@@ -126,7 +126,7 @@ function osDescription() {
 
 # Prints a message prefixed with a time stamp of the form 2018-01-02 13:14:15"
 function trace() {
-    timestamp=$(date -u +"%Y-%m-%d %H:%M:%SZ")
+    local timestamp=$(date -u +"%Y-%m-%d %H:%M:%SZ")
     echo -e "${timestamp}" "${thisScript}:" "$@"
 }
 
