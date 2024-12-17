@@ -245,7 +245,7 @@ if [ -f ${condaExtendedEnvironment} ]; then
         baseEnv=${CONDA_DEFAULT_ENV}
         extendedEnv="${baseEnv}-ext"
         trace "creating ${extendedEnv} conda environment"
-        cmd="mamba --no-banner create --name ${extendedEnv} --clone ${baseEnv}"
+        cmd="mamba create --name ${extendedEnv} --clone ${baseEnv}"
         trace ${cmd}
         if ! ${cmd}; then
             trace "could not create ${extendedEnv}"
@@ -261,7 +261,7 @@ if [ -f ${condaExtendedEnvironment} ]; then
         fi
 
         trace "installing extra conda packages"
-        cmd="mamba --no-banner install --channel conda-forge --quiet --yes --file ${condaExtendedEnvironment}"
+        cmd="mamba install --channel conda-forge --quiet --yes --file ${condaExtendedEnvironment}"
         trace ${cmd}
         if ! ${cmd}; then
             # Could not install extra packages into the newly created environment
