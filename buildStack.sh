@@ -140,22 +140,6 @@ trace "working directory" $(pwd)
 trace $cmd ; $cmd
 
 #
-# Set deployment target for OS X
-#    10.9   Mavericks
-#    10.10  Yosemite
-#    10.11  El Capitan
-#    10.12  Sierra
-#    10.13  High Sierra
-#    10.14  Mojave
-#    10.15  Catalina
-#    11     Big Sur
-#    12     Monterey
-#
-if [[ ${os} == "darwin" ]]; then
-    export MACOSX_DEPLOYMENT_TARGET="10.9"
-fi
-
-#
 # Remove conda & mamba configuration files as well as astropy cache
 #
 rm -rf ${HOME}/.conda ${HOME}/.condarc ${HOME}/.mambarc ${HOME}/.astropy ${HOME}/.lsst/astropy
