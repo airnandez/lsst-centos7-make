@@ -245,7 +245,7 @@ if [ -f ${condaExtendedEnvironment} ]; then
         baseEnv=${CONDA_DEFAULT_ENV}
         extendedEnv="${baseEnv}-ext"
         trace "creating ${extendedEnv} conda environment"
-        cmd="mamba create --name ${extendedEnv} --clone ${baseEnv}"
+        cmd="conda create --name ${extendedEnv} --clone ${baseEnv}"
         trace ${cmd}
         if ! ${cmd}; then
             trace "could not create ${extendedEnv}"
@@ -261,7 +261,7 @@ if [ -f ${condaExtendedEnvironment} ]; then
         fi
 
         trace "installing extra conda packages"
-        cmd="mamba install --channel conda-forge --quiet --yes --file ${condaExtendedEnvironment}"
+        cmd="conda install --channel conda-forge --quiet --yes --file ${condaExtendedEnvironment}"
         trace ${cmd}
         if ! ${cmd}; then
             # Could not install extra packages into the newly created environment
@@ -277,7 +277,7 @@ if [ -f ${condaExtendedEnvironment} ]; then
 
             # Remove the newly created environment
             trace "removing extended environment ${extendedEnv}"
-            cmd="mamba env remove --name ${extendedEnv}"
+            cmd="conda env remove --name ${extendedEnv}"
             trace ${cmd} ; ${cmd}
         else
             didCreateEnvironment=true
@@ -332,7 +332,6 @@ Tag:                 ${tag}
 Build time:          $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 Build platform:      $(osDescription)
 conda:               $(conda --version)
-mamba:               $(mamba --version | grep mamba)
 conda environment:   ${baseEnv:-${CONDA_DEFAULT_ENV}}
 Python interpreter:  $(pythonDescription)
 C++ compiler:        $(cppDescription)
