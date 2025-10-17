@@ -180,6 +180,13 @@ trace "activating minimal LSST environment via loadLSST.bash"
 source loadLSST.bash
 
 #
+# Increase the number of file descriptors to the maximum allowed.
+# This is needed for building from source and running tests in
+# parallel using several CPUs.
+#
+ulimit -n hard
+
+#
 # Download and build the requested product
 #
 cmd="eups distrib install -t ${tag} ${product}"
