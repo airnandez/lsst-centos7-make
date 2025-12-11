@@ -1,4 +1,4 @@
-FROM almalinux:9.6
+FROM almalinux:9.7
 
 LABEL maintainer="Fabio Hernandez <fabio@in2p3.fr>" \
 	keywords="CernVM-FS,cvmfs,lsst,binary distribution" \
