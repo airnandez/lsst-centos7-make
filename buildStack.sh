@@ -356,10 +356,13 @@ if [[ ${buildDir} =~ /cvmfs ]]; then
     trace ${cmd} ; ${cmd}
 
     # Add an empty '.cvmfscatalog' file at the root directory of
-    # each conda environment
+    # each conda environment, as well as a ".cargo" directory.
     trace "creating .cvmfscatalog files for each conda environment"
     for dir in $(conda env list | awk '/^lsst-scipipe-*/ {print $NF}'); do
         cmd="touch ${dir}/.cvmfscatalog"
+        trace ${cmd} ; ${cmd}
+
+        cmd="mkdir -p ${dir}/.cargo"
         trace ${cmd} ; ${cmd}
     done
 fi
